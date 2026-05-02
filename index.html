@@ -8,7 +8,8 @@
 <meta name="theme-color" content="#84643E">
 <title>아웃캐스트 관람 기록</title>
 <link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./-pDHY_Ab_400x400.jpg">
+<link rel="icon" type="image/jpeg" href="./icon.jpg">
+<link rel="apple-touch-icon" href="./icon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://cdn.jsdelivr.net/gh/projectnoonnu/2604-1@1.1/Ownglyph_positive.woff2" rel="preload" as="font" type="font/woff2" crossorigin>
@@ -2423,8 +2424,6 @@ async function fetchScheduleData() {
       ? `✅ ${state.showSchedule.length}개 일정 불러옴 · ${updatedCount}개 이벤트 업데이트`
       : `✅ ${state.showSchedule.length}개 일정을 불러왔습니다`;
     showToast(fetchMsg);
-
-    console.log('일정 데이터:', state.showSchedule);
   } catch(e) {
     showToast('❌ 불러오기 실패: 네트워크를 확인해주세요');
   }
