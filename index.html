@@ -7,16 +7,26 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#84643E">
 <title>아웃캐스트 관람 기록</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./-pDHY_Ab_400x400.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://cdn.jsdelivr.net/gh/projectnoonnu/2405@latest/Ownglyph_ParkDaHyun-Rg.woff2" rel="preload" as="font" type="font/woff2" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/projectnoonnu/2604-1@1.1/Ownglyph_positive.woff2" rel="preload" as="font" type="font/woff2" crossorigin>
 <style>
-@font-face{font-family:'Ownglyph_ParkDaHyun';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2405@latest/Ownglyph_ParkDaHyun-Rg.woff2') format('woff2');font-weight:normal;font-style:normal}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');font-weight:100;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraLight.woff2') format('woff2');font-weight:200;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Light.woff2') format('woff2');font-weight:300;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraBold.woff2') format('woff2');font-weight:800;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Black.woff2') format('woff2');font-weight:900;font-display:swap}
 :root{--bg:#f7f3ee;--surface:#fffcf8;--surface2:#f0e9df;--text:#2c1f0e;--text2:#7a6248;--border:#ddd0bc;--primary:#84643E;--primary-l:#b08a5e;--accent:#c0865a;--success:#5a8c6a;--warn:#c49a3c;--danger:#b85c4a;--nav:#fffcf8;--shadow:0 2px 12px rgba(132,100,62,.10);--radius-sm:10px;--radius-md:14px;--radius-lg:20px;--touch:44px}
 [data-theme="dark"]{--bg:#1a1208;--surface:#261a0e;--surface2:#1f1509;--text:#f0e4d0;--text2:#a8896a;--border:#3e2e1a;--primary:#c49a6a;--primary-l:#84643E;--accent:#d4a07a;--success:#6aaa7a;--warn:#d4aa4a;--danger:#cc7060;--nav:#261a0e;--shadow:0 2px 12px rgba(0,0,0,.5)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{height:100%;overflow:hidden}
-body{font-family:'Ownglyph_ParkDaHyun',-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font-size:14px;line-height:1.5;background:var(--bg);color:var(--text);max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;overflow:hidden}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font-size:14px;line-height:1.5;background:var(--bg);color:var(--text);max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;overflow:hidden}
 /* Header */
 .app-header{flex-shrink:0;width:100%;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;z-index:100;box-shadow:var(--shadow)}
 .app-title{font-size:20px;font-weight:800;color:var(--primary);letter-spacing:-0.5px}
@@ -319,25 +329,25 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <div class="counter-row">
           <span class="counter-label">40% 할인권</span>
           <div class="counter-ctrl">
-            <button class="cnt-btn" onclick="changeCoupon('forty',-1)">−</button>
+            <button class="cnt-btn" onclick="openCouponChangeModal('forty',-1)">−</button>
             <span class="cnt-val" id="cc-forty">0</span>
-            <button class="cnt-btn" onclick="changeCoupon('forty',1)">＋</button>
+            <button class="cnt-btn" onclick="openCouponChangeModal('forty',1)">＋</button>
           </div>
         </div>
         <div class="counter-row">
           <span class="counter-label">50% 할인권</span>
           <div class="counter-ctrl">
-            <button class="cnt-btn" onclick="changeCoupon('fifty',-1)">−</button>
+            <button class="cnt-btn" onclick="openCouponChangeModal('fifty',-1)">−</button>
             <span class="cnt-val" id="cc-fifty">0</span>
-            <button class="cnt-btn" onclick="changeCoupon('fifty',1)">＋</button>
+            <button class="cnt-btn" onclick="openCouponChangeModal('fifty',1)">＋</button>
           </div>
         </div>
         <div class="counter-row" style="border-bottom:none">
           <span class="counter-label">증빙패스</span>
           <div class="counter-ctrl">
-            <button class="cnt-btn" onclick="changeCoupon('proofpass',-1)">−</button>
+            <button class="cnt-btn" onclick="openCouponChangeModal('proofpass',-1)">−</button>
             <span class="cnt-val" id="cc-proof">0</span>
-            <button class="cnt-btn" onclick="changeCoupon('proofpass',1)">＋</button>
+            <button class="cnt-btn" onclick="openCouponChangeModal('proofpass',1)">＋</button>
           </div>
         </div>
       </div>
@@ -584,6 +594,40 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
   </div>
 </div>
 
+<!-- Coupon Change Modal -->
+<div class="overlay" id="modal-coupon-change">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="coupon-change-title">할인권 추가</div>
+    <input type="hidden" id="cc-kind">
+    <input type="hidden" id="cc-delta">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">날짜</label>
+        <input class="form-input" id="cc-date" type="date" onchange="onCCDateChange()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">시간</label>
+        <select class="form-select" id="cc-time"></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:-6px">
+      <label class="check-group">
+        <input type="checkbox" id="cc-holiday" onchange="onCCDateChange()">
+        <span>공휴일 (시간 옵션 변경)</span>
+      </label>
+    </div>
+    <div class="form-group">
+      <label class="form-label">메모 (선택)</label>
+      <input class="form-input" id="cc-memo" type="text" placeholder="예: 재관람카드 3회차 달성">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-coupon-change')">취소</button>
+      <button class="btn btn-primary" style="flex:2" id="cc-confirm-btn" onclick="confirmCouponChange()">확인</button>
+    </div>
+  </div>
+</div>
+
 <!-- Coupon Pack Modal -->
 <div class="overlay" id="modal-coupon-pack">
   <div class="modal-sheet">
@@ -749,7 +793,7 @@ let state = {
   coupons: { forty: 0, fifty: 0, proofpass: 0 },
   couponLogs: [],
   showSchedule: [],
-  settings: { theme: 'light', sheetsUrl: '', titleEmoji: '🕊️' }
+  settings: { theme: 'light', sheetsUrl: '', titleEmoji: '🕊️', activeTab: 'home' }
 };
 
 function saveState() { localStorage.setItem('outcast_app_state', JSON.stringify(state)); }
@@ -767,6 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dark-toggle').checked = state.settings.theme === 'dark';
   renderScheduleUpdateDate();
   renderAll();
+  switchTab(state.settings.activeTab || 'home');
   fetchScheduleData();
 });
 
@@ -776,6 +821,7 @@ function renderAll() {
   renderNextSchedule();
   renderCouponCounts();
   renderRewatchCards();
+  renderRewatchCardsInCoupon();
   renderHomeConfirmed();
   renderScheduleTabs();
   renderCouponLog();
@@ -788,8 +834,9 @@ function switchTab(name) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelector(`.nav-item[data-tab="${name}"]`).classList.add('active');
+  state.settings.activeTab = name;
+  saveState();
   if (name === 'stats') { renderStats(); requestAnimationFrame(applyHeatmapScale); }
-  if (name === 'coupon') renderRewatchCardsInCoupon();
 }
 
 function toggleDarkMode(on) {
@@ -933,6 +980,31 @@ function renderNextSchedule() {
   const event = next.event || '-';
   const memo = next.memo || '-';
 
+  // 재관람카드 & 혜택 정보
+  let rwInfoHtml = '';
+  if (next.cardId) {
+    const card = state.rewatchCards.find(c => c.id === next.cardId);
+    if (card) {
+      const stampIdx = card.stamps.findIndex(s => s.scheduleId === next.id);
+      const stampNum = stampIdx >= 0 ? stampIdx + 1 : null;
+      const milestoneRewards = { 3: '40% 할인권 🎫', 5: '폴라로이드 📸', 7: '50% 할인권 + OST 🎶' };
+      const milestoneLabel = stampNum && milestoneRewards[stampNum]
+        ? `<span style="display:inline-block;margin-top:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:var(--primary);color:#fff">🎁 ${milestoneRewards[stampNum]} 수령 가능</span>`
+        : '';
+      const stampLabel = stampNum
+        ? `${card.name} · ${stampNum}번째 도장`
+        : `${card.name} · 도장 연동됨`;
+      rwInfoHtml = `
+        <div class="next-sched-row" style="margin-top:4px;border-top:1px solid var(--border);padding-top:6px;flex-wrap:wrap;gap:4px">
+          <span class="next-sched-key">재관람</span>
+          <span class="next-sched-val" style="flex:1">
+            <span style="font-weight:600">📑 ${stampLabel}</span>
+            ${milestoneLabel}
+          </span>
+        </div>`;
+    }
+  }
+
   el.innerHTML = `
     <div class="next-sched-card" onclick="openDetail('${next.id}')">
       <div class="next-sched-header">
@@ -946,6 +1018,7 @@ function renderNextSchedule() {
         <div class="next-sched-row"><span class="next-sched-key">좌석</span><span class="next-sched-val">${seat}</span></div>
         <div class="next-sched-row"><span class="next-sched-key">이벤트</span><span class="next-sched-val">${event}</span></div>
         <div class="next-sched-row"><span class="next-sched-key">메모</span><span class="next-sched-val">${memo}</span></div>
+        ${rwInfoHtml}
       </div>
     </div>`;
 }
@@ -981,13 +1054,53 @@ function renderCouponCounts() {
   document.getElementById('cc-proof') && (document.getElementById('cc-proof').textContent = c.proofpass||0);
 }
 
-function changeCoupon(kind, delta) {
+function onCCDateChange() {
+  const keep = document.getElementById('cc-time').value;
+  updateTimeSelect('cc-date', 'cc-time', 'cc-holiday', keep);
+}
+
+function openCouponChangeModal(kind, delta) {
+  const kindNames = { forty: '40% 할인권', fifty: '50% 할인권', proofpass: '증빙패스' };
+  const action = delta > 0 ? '추가' : '차감';
+  document.getElementById('coupon-change-title').textContent = `${kindNames[kind]} ${action}`;
+  document.getElementById('cc-confirm-btn').textContent = action;
+  document.getElementById('cc-confirm-btn').className = `btn ${delta > 0 ? 'btn-primary' : 'btn-danger'}`;
+  document.getElementById('cc-kind').value = kind;
+  document.getElementById('cc-delta').value = delta;
+  document.getElementById('cc-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('cc-holiday').checked = false;
+  updateTimeSelect('cc-date', 'cc-time', 'cc-holiday');
+  document.getElementById('cc-memo').value = '';
+  openModal('modal-coupon-change');
+}
+
+function confirmCouponChange() {
+  const kind = document.getElementById('cc-kind').value;
+  const delta = parseInt(document.getElementById('cc-delta').value);
+  const date = document.getElementById('cc-date').value || new Date().toISOString().slice(0, 10);
+  const time = document.getElementById('cc-time').value;
+  const memo = document.getElementById('cc-memo').value.trim();
+  const defaultMemo = delta > 0 ? '수동 추가' : '수동 차감';
   state.coupons[kind] = Math.max(0, (state.coupons[kind] || 0) + delta);
-  const today = new Date().toISOString().slice(0,10);
-  state.couponLogs.unshift({ id: uuid(), date: today, type: delta > 0 ? '획득' : '사용', kind, memo: '수동 ' + (delta>0?'추가':'차감'), qty: Math.abs(delta) });
+  state.couponLogs.unshift({
+    id: uuid(),
+    date,
+    time: time || '',
+    type: delta > 0 ? '획득' : '사용',
+    kind,
+    memo: memo || defaultMemo,
+    qty: Math.abs(delta)
+  });
   saveState();
   renderCouponCounts();
   renderCouponLog();
+  closeModal('modal-coupon-change');
+  const kindNames = { forty: '40% 할인권', fifty: '50% 할인권', proofpass: '증빙패스' };
+  showToast(`${delta > 0 ? '✅' : '🗑'} ${kindNames[kind]} ${delta > 0 ? '추가' : '차감'} 완료`);
+}
+
+function changeCoupon(kind, delta) {
+  openCouponChangeModal(kind, delta);
 }
 
 function openCouponPackModal() {
@@ -1026,16 +1139,18 @@ function renderCouponLog() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>기록이 없습니다</p></div>';
     return;
   }
-  el.innerHTML = state.couponLogs.slice(0,50).map(log => `
+  el.innerHTML = state.couponLogs.slice(0,50).map(log => {
+    const timeStr = log.time ? ` ${log.time}` : '';
+    return `
     <div class="log-item">
       <span class="log-badge ${log.type==='획득'?'log-gain':'log-use'}">${log.type}</span>
       <div class="log-info">
         <div style="font-weight:600">${kindLabel(log.kind)}${log.qty&&log.qty>1?` × ${log.qty}`:''}</div>
-        <div class="log-memo">${log.date}${log.memo?' · '+log.memo:''}</div>
+        <div class="log-memo">${log.date}${timeStr}${log.memo?' · '+log.memo:''}</div>
       </div>
       <button class="btn btn-sm" style="flex-shrink:0;padding:0 8px;height:30px;background:none;border:1px solid var(--border);color:var(--danger);border-radius:8px;font-size:12px" onclick="deleteCouponLog('${log.id}')">삭제</button>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function deleteCouponLog(logId) {
@@ -1620,7 +1735,15 @@ function buildRewatchCard(card, isHome = false) {
       ondragleave="this.classList.remove('drag-over')"
       ondrop="onCardDrop(event,'${card.id}')">
       <div class="rw-card-header">
-        <span class="rw-card-name">📑 ${card.name}</span>
+        <span class="rw-card-name" style="display:flex;align-items:center;gap:4px">
+          📑 <span
+            contenteditable="true"
+            spellcheck="false"
+            style="outline:none;border-bottom:1px dashed var(--border);min-width:40px;max-width:160px;cursor:text"
+            onblur="renameRewatchCard('${card.id}', this.textContent.trim())"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"
+          >${card.name}</span>
+        </span>
         <div>
           <span style="font-size:11px;color:var(--text2)">${stampCount}/7</span>
           <button class="btn btn-sm btn-danger" style="margin-left:6px;padding:3px 8px;font-size:10px" onclick="deleteRewatchCard('${card.id}')">삭제</button>
@@ -1653,7 +1776,7 @@ function renderRewatchCardsInCoupon() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📑</div><p>재관람카드가 없습니다</p></div>';
     return;
   }
-  el.innerHTML = state.rewatchCards.map(c => buildRewatchCard(c)).join('');
+  el.innerHTML = state.rewatchCards.map(c => buildRewatchCard(c, true)).join('');
 }
 
 // ===== REWATCH CARD FROM MODAL =====
@@ -1775,6 +1898,21 @@ function saveStampOnly() {
   closeModal('modal-stamp-only');
   const qtyLabel = qty === 1 ? '단일' : qty === 2 ? '더블' : '트리플';
   showToast(`✅ ${qtyLabel} 적립 완료 (${stampNum}/7)`);
+}
+
+function renameRewatchCard(cardId, newName) {
+  if (!newName) return;
+  const card = state.rewatchCards.find(c => c.id === cardId);
+  if (!card || card.name === newName) return;
+  card.name = newName;
+  saveState();
+  // 드롭다운 옵션도 업데이트
+  ['f-card', 'se-card-select', 'stamp-card-id'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const opt = el.querySelector(`option[value="${cardId}"]`);
+    if (opt) opt.textContent = newName;
+  });
 }
 
 function deleteRewatchCard(cardId) {
@@ -1924,8 +2062,7 @@ function onStampDragStart(e, cardId, stampIdx) {
 
 function onCardDrop(e, targetCardId) {
   e.preventDefault();
-  const el = document.getElementById('rw-' + targetCardId);
-  if (el) el.classList.remove('drag-over');
+  document.querySelectorAll(`[id="rw-${targetCardId}"]`).forEach(el => el.classList.remove('drag-over'));
 
   if (!dragSource) return;
   const { cardId: srcCardId, stampIdx } = dragSource;

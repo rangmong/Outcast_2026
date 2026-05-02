@@ -1,0 +1,19 @@
+{
+  "name": "아웃캐스트 관람 기록",
+  "short_name": "아웃캐스트",
+  "description": "뮤지컬 아웃캐스트 2026 관람 기록 앱",
+  "start_url": "/Outcast_2026/",
+  "scope": "/Outcast_2026/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0eb",
+  "theme_color": "#84643E",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "./icon.jpg",
+      "sizes": "400x400",
+      "type": "image/jpeg"
+    }
+  ]
+}
