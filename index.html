@@ -1049,7 +1049,21 @@ function renderNextSchedule() {
     </div>`;
 }
 
+// 쿠폰 잔량을 couponLogs에서 전체 재계산 (source of truth = logs)
+function recalcCoupons() {
+  const counts = {};
+  state.couponLogs.forEach(log => {
+    const qty = log.qty ?? 1;
+    if (log.type === '획득') counts[log.kind] = (counts[log.kind] || 0) + qty;
+    else if (log.type === '사용') counts[log.kind] = (counts[log.kind] || 0) - qty;
+  });
+  ['forty', 'fifty', 'proofpass', 'polaroid'].forEach(k => {
+    state.coupons[k] = Math.max(0, counts[k] || 0);
+  });
+}
+
 function renderCouponCounts() {
+  recalcCoupons();
   const c = state.coupons;
 
   // 최종(총 획득) 갯수 계산
@@ -1107,7 +1121,6 @@ function confirmCouponChange() {
   const time = document.getElementById('cc-time').value;
   const memo = document.getElementById('cc-memo').value.trim();
   const defaultMemo = delta > 0 ? '수동 추가' : '수동 차감';
-  state.coupons[kind] = Math.max(0, (state.coupons[kind] || 0) + delta);
   state.couponLogs.unshift({
     id: uuid(),
     date,
@@ -1117,6 +1130,7 @@ function confirmCouponChange() {
     memo: memo || defaultMemo,
     qty: Math.abs(delta)
   });
+  recalcCoupons();
   saveState();
   renderAll();
   closeModal('modal-coupon-change');
@@ -1138,12 +1152,11 @@ function addCouponPack() {
   const memo = document.getElementById('pack-memo').value.trim() || '쿠폰팩 추가';
   const kinds = ['forty', 'fifty', 'proofpass'];
   kinds.forEach(kind => {
-    state.coupons[kind] = (state.coupons[kind] || 0) + 1;
     state.couponLogs.unshift({ id: uuid(), date, type: '획득', kind, memo, qty: 1 });
   });
+  recalcCoupons();
   saveState();
-  renderCouponCounts();
-  renderCouponLog();
+  renderAll();
   closeModal('modal-coupon-pack');
   showToast('✅ 쿠폰팩 추가됨 (40% · 50% · 증빙패스 각 1장)');
 }
@@ -1190,13 +1203,8 @@ function deleteCouponLog(logId) {
     confirmClass: 'btn-danger',
     cancelText: '취소',
     onConfirm: () => {
-      // 획득 기록 삭제 시 쿠폰 갯수에서 차감, 사용 기록 삭제 시 복원
-      if (log.type === '획득') {
-        state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty ?? 1));
-      } else {
-        state.coupons[log.kind] = (state.coupons[log.kind] || 0) + (log.qty ?? 1);
-      }
       state.couponLogs = state.couponLogs.filter(l => l.id !== logId);
+      recalcCoupons();
       saveState();
       renderAll();
       showToast('🗑️ 기록이 삭제되었습니다');
@@ -1427,11 +1435,11 @@ function saveSchedule() {
     } else {
       // 할인권 변경 / 제거 / 신규 적용
       if (['forty', 'fifty', 'proofpass'].includes(oldDiscount)) {
-        state.coupons[oldDiscount] = (state.coupons[oldDiscount] || 0) + 1;
         if (existingLogIdx !== -1) state.couponLogs.splice(existingLogIdx, 1);
       }
       if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
-        state.coupons[discountUsed] = Math.max(0, (state.coupons[discountUsed] || 0) - 1);
+        recalcCoupons();
+        if ((state.coupons[discountUsed] || 0) <= 0) { showToast('❗ 해당 할인권이 없습니다'); return; }
         state.couponLogs.unshift({ id: uuid(), date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
       }
     }
@@ -1448,10 +1456,10 @@ function saveSchedule() {
     const id = uuid();
     // Coupon usage
     if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
+      recalcCoupons();
       if ((state.coupons[discountUsed] || 0) <= 0) {
         showToast('❗ 해당 할인권이 없습니다'); return;
       }
-      state.coupons[discountUsed] = (state.coupons[discountUsed] || 0) - 1;
       state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: id });
     }
     const sched = { id, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
@@ -1466,21 +1474,11 @@ function saveSchedule() {
     }
   }
 
+  recalcCoupons();
   saveState();
   renderAll();
   closeModal('modal-add');
   showToast('✅ 기록이 저장되었습니다');
-}
-
-function reverseMilestone(cardId, stampNum) {
-  const logIdx = state.couponLogs.findIndex(l => l.cardId === cardId && l.stampNum === stampNum);
-  if (logIdx !== -1) {
-    const log = state.couponLogs[logIdx];
-    if (log.type === '획득') {
-      state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty ?? 1));
-    }
-    state.couponLogs.splice(logIdx, 1);
-  }
 }
 
 function deleteSchedule(id) {
@@ -1497,16 +1495,13 @@ function deleteSchedule(id) {
       // 할인권 사용 로그 제거
       const usageLogIdx = state.couponLogs.findIndex(l => l.scheduleId === id && l.type === '사용');
       if (usageLogIdx !== -1) state.couponLogs.splice(usageLogIdx, 1);
-      else if (['forty', 'fifty', 'proofpass'].includes(s.discountUsed)) {
-        // 구버전 로그(scheduleId 없는 경우) 카운트만 복원
-        state.coupons[s.discountUsed] = (state.coupons[s.discountUsed] || 0) + 1;
-      }
       if (s.cardId && !s.isNanum) {
         const card = state.rewatchCards.find(c => c.id === s.cardId);
         removeStampFromCard(s.cardId, id);
         if (card) recalculateMilestones(card, false);
       }
       state.schedules = state.schedules.filter(x => x.id !== id);
+      recalcCoupons();
       saveState();
       renderAll();
       closeModal('modal-detail');
@@ -1755,16 +1750,10 @@ function recalculateMilestones(card, showToasts = true) {
       .filter(l => l.cardId === card.id && [3, 5, 7].includes(l.stampNum))
       .map(l => l.stampNum)
   );
-  // 기존 마일스톤 로그 제거 + 쿠폰 수량 역산
+  // 기존 마일스톤 로그 제거 (쿠폰 수량은 recalcCoupons가 재계산)
   [3, 5, 7].forEach(num => {
     const idx = state.couponLogs.findIndex(l => l.cardId === card.id && l.stampNum === num);
-    if (idx !== -1) {
-      const log = state.couponLogs[idx];
-      if (log.type === '획득') {
-        state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty ?? 1));
-      }
-      state.couponLogs.splice(idx, 1);
-    }
+    if (idx !== -1) state.couponLogs.splice(idx, 1);
   });
   // 정렬된 도장 순서 기준으로 마일스톤 재등록
   [3, 5, 7].forEach(num => {
@@ -1772,14 +1761,12 @@ function recalculateMilestones(card, showToasts = true) {
       const stamp = card.stamps[num - 1];
       const logDate = (stamp && stamp.date) || new Date().toISOString().slice(0, 10);
       if (num === 3) {
-        state.coupons.forty = (state.coupons.forty || 0) + 2;
         state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2, cardId: card.id, stampNum: 3 });
         if (showToasts && !prevMilestones.has(3)) showToast('🎉 3회차 달성! 40% 할인권 2장 획득!');
       } else if (num === 5) {
         state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'polaroid', memo: `${card.name} 5회차 달성 - 폴라 획득`, qty: 1, cardId: card.id, stampNum: 5 });
         if (showToasts && !prevMilestones.has(5)) showToast('📸 5회차 달성! 폴라 획득!');
       } else if (num === 7) {
-        state.coupons.fifty = (state.coupons.fifty || 0) + 1;
         state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'fifty', memo: `${card.name} 7회차 달성 - 50% 할인권 및 OST 획득`, qty: 1, cardId: card.id, stampNum: 7 });
         if (showToasts && !prevMilestones.has(7)) showToast('🎶 7회차 달성! 50% 할인권 및 OST 획득!');
       }
@@ -1973,10 +1960,10 @@ function saveStampOnly() {
   const today = new Date().toISOString().slice(0, 10);
 
   if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
+    recalcCoupons();
     if ((state.coupons[discountUsed] || 0) <= 0) {
       showToast('❗ 해당 할인권이 없습니다'); return;
     }
-    state.coupons[discountUsed] = (state.coupons[discountUsed] || 0) - 1;
     state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 도장 적립 사용`, qty: 1 });
   }
 
@@ -1987,7 +1974,7 @@ function saveStampOnly() {
   sortStampsByDate(card);
   recalculateMilestones(card);
   const stampNum = card.stamps.length;
-
+  recalcCoupons();
   saveState();
   renderAll();
   closeModal('modal-stamp-only');
@@ -2174,6 +2161,8 @@ function onCardDrop(e, targetCardId) {
   const stamp = srcCard.stamps.splice(stampIdx, 1)[0];
   tgtCard.stamps.push(stamp);
   sortStampsByDate(tgtCard);
+  recalculateMilestones(srcCard, false);
+  recalculateMilestones(tgtCard, false);
 
   // Update schedule's cardId
   if (stamp.scheduleId) {
@@ -2181,6 +2170,8 @@ function onCardDrop(e, targetCardId) {
     if (sched) sched.cardId = targetCardId;
   }
 
+  
+  recalcCoupons();
   saveState();
   renderAll();
   showToast('✅ 도장을 이동했습니다');
