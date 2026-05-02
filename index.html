@@ -1422,7 +1422,7 @@ function saveSchedule() {
     // Apply new coupon
     if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
       state.coupons[discountUsed] = Math.max(0, (state.coupons[discountUsed] || 0) - 1);
-      state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1 });
+      state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
     }
     state.schedules[idx] = { ...old, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     // Add stamp to new card (수정 시 1개만)
@@ -1437,7 +1437,7 @@ function saveSchedule() {
         showToast('❗ 해당 할인권이 없습니다'); return;
       }
       state.coupons[discountUsed] = (state.coupons[discountUsed] || 0) - 1;
-      state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1 });
+      state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: id });
     }
     const sched = { id, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     state.schedules.push(sched);
@@ -1457,6 +1457,17 @@ function saveSchedule() {
   showToast('✅ 기록이 저장되었습니다');
 }
 
+function reverseMilestone(cardId, stampNum) {
+  const logIdx = state.couponLogs.findIndex(l => l.cardId === cardId && l.stampNum === stampNum);
+  if (logIdx !== -1) {
+    const log = state.couponLogs[logIdx];
+    if (log.type === '획득') {
+      state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty ?? 1));
+    }
+    state.couponLogs.splice(logIdx, 1);
+  }
+}
+
 function deleteSchedule(id) {
   const s = state.schedules.find(x => x.id === id);
   if (!s) return;
@@ -1468,10 +1479,23 @@ function deleteSchedule(id) {
     confirmClass: 'btn-danger',
     cancelText: '취소',
     onConfirm: () => {
-      if (['forty', 'fifty', 'proofpass'].includes(s.discountUsed)) {
+      // 할인권 사용 로그 제거
+      const usageLogIdx = state.couponLogs.findIndex(l => l.scheduleId === id && l.type === '사용');
+      if (usageLogIdx !== -1) state.couponLogs.splice(usageLogIdx, 1);
+      else if (['forty', 'fifty', 'proofpass'].includes(s.discountUsed)) {
+        // 구버전 로그(scheduleId 없는 경우) 카운트만 복원
         state.coupons[s.discountUsed] = (state.coupons[s.discountUsed] || 0) + 1;
       }
       if (s.cardId && !s.isNanum) {
+        // 마일스톤 역산
+        const card = state.rewatchCards.find(c => c.id === s.cardId);
+        if (card) {
+          const stampIdx = card.stamps.findIndex(st => st.scheduleId === id);
+          if (stampIdx !== -1) {
+            const stampNum = stampIdx + 1;
+            if ([3, 5, 7].includes(stampNum)) reverseMilestone(s.cardId, stampNum);
+          }
+        }
         removeStampFromCard(s.cardId, id);
       }
       state.schedules = state.schedules.filter(x => x.id !== id);
@@ -1702,14 +1726,14 @@ function checkMilestone(card, stampNum, stampDate) {
   const logDate = stampDate || new Date().toISOString().slice(0,10);
   if (stampNum === 3) {
     state.coupons.forty = (state.coupons.forty || 0) + 2;
-    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2 });
+    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2, cardId: card.id, stampNum: stampNum });
     showToast('🎉 3회차 달성! 40% 할인권 2장 획득!');
   } else if (stampNum === 5) {
-    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'polaroid', memo: `${card.name} 5회차 달성 - 폴라 획득`, qty: 1 });
+    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'polaroid', memo: `${card.name} 5회차 달성 - 폴라 획득`, qty: 1, cardId: card.id, stampNum: stampNum });
     showToast('📸 5회차 달성! 폴라 획득!');
   } else if (stampNum === 7) {
     state.coupons.fifty = (state.coupons.fifty || 0) + 1;
-    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'fifty', memo: `${card.name} 7회차 달성 - 50% 할인권 및 OST 획득`, qty: 1 });
+    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'fifty', memo: `${card.name} 7회차 달성 - 50% 할인권 및 OST 획득`, qty: 1, cardId: card.id, stampNum: stampNum });
     showToast('🎶 7회차 달성! 50% 할인권 및 OST 획득!');
   }
 }
@@ -2067,6 +2091,8 @@ function deleteStampEdit() {
     onConfirm: () => {
       const card = state.rewatchCards.find(c => c.id === cardId);
       if (!card) return;
+      const stampNum = stampIdx + 1;
+      if ([3, 5, 7].includes(stampNum)) reverseMilestone(cardId, stampNum);
       card.stamps.splice(stampIdx, 1);
       saveState();
       renderAll();
