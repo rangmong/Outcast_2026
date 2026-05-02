@@ -1053,7 +1053,7 @@ function renderCouponCounts() {
   // 최종(총 획득) 갯수 계산
   const totals = { forty: 0, fifty: 0, proofpass: 0 };
   state.couponLogs.forEach(log => {
-    if (log.type === '획득') totals[log.kind] = (totals[log.kind] || 0) + (log.qty || 1);
+    if (log.type === '획득') totals[log.kind] = (totals[log.kind] || 0) + (log.qty ?? 1);
   });
 
   const pairs = [
@@ -1150,6 +1150,7 @@ function kindLabel(k) {
   if (k === 'forty') return '40% 할인권';
   if (k === 'fifty') return '50% 할인권';
   if (k === 'proofpass') return '증빙패스';
+  if (k === 'polaroid') return '폴라로이드 📸';
   if (k === 'preview') return '프리뷰 할인';
   if (k === 'rewatch') return '재관람 할인';
   return k;
@@ -1189,9 +1190,9 @@ function deleteCouponLog(logId) {
     onConfirm: () => {
       // 획득 기록 삭제 시 쿠폰 갯수에서 차감, 사용 기록 삭제 시 복원
       if (log.type === '획득') {
-        state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty || 1));
+        state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty ?? 1));
       } else {
-        state.coupons[log.kind] = (state.coupons[log.kind] || 0) + (log.qty || 1);
+        state.coupons[log.kind] = (state.coupons[log.kind] || 0) + (log.qty ?? 1);
       }
       state.couponLogs = state.couponLogs.filter(l => l.id !== logId);
       saveState();
@@ -1704,7 +1705,7 @@ function checkMilestone(card, stampNum, stampDate) {
     state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2 });
     showToast('🎉 3회차 달성! 40% 할인권 2장 획득!');
   } else if (stampNum === 5) {
-    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 5회차 달성 - 폴라 획득`, qty: 0 });
+    state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'polaroid', memo: `${card.name} 5회차 달성 - 폴라 획득`, qty: 1 });
     showToast('📸 5회차 달성! 폴라 획득!');
   } else if (stampNum === 7) {
     state.coupons.fifty = (state.coupons.fifty || 0) + 1;
