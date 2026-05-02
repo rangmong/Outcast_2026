@@ -1173,8 +1173,9 @@ function updateShowSchedInfo() {
   infoBox.style.display = 'block';
   infoContent.innerHTML = matches.map(s => {
     const isSelected = s.time === time;
-    const alexName = s.alex || '';
-    const philosName = s.philos || '';
+    const castParts = (s.cast || '').split('/').map(x => x.trim()).filter(Boolean);
+    const alexName = castParts[0] || '';
+    const philosName = castParts[1] || '';
     const castLine = [
       alexName ? `알렉산드로스. ${alexName}` : '',
       philosName ? `필로스. ${philosName}` : ''
@@ -1190,11 +1191,10 @@ function updateShowSchedInfo() {
   // 정확히 일치하는 일정 있으면 자동 입력 + readonly
   const exact = matches.find(s => s.time === time);
   if (exact) {
-    if (exact.alex || exact.philos) {
-      const alexName = exact.alex || '';
-      const philosName = exact.philos || '';
-      if (alexEl) { alexEl.value = alexName || ''; alexEl.setAttribute('readonly', 'readonly'); }
-      if (philosEl) { philosEl.value = philosName || ''; philosEl.setAttribute('readonly', 'readonly'); }
+    if (exact.cast) {
+      const parts = exact.cast.split('/').map(x => x.trim());
+      if (alexEl) { alexEl.value = parts[0] || ''; alexEl.setAttribute('readonly', 'readonly'); }
+      if (philosEl) { philosEl.value = parts[1] || ''; philosEl.setAttribute('readonly', 'readonly'); }
     } else {
       if (alexEl) alexEl.removeAttribute('readonly');
       if (philosEl) philosEl.removeAttribute('readonly');
