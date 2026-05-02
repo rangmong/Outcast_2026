@@ -1629,6 +1629,7 @@ function renderStats() {
 function renderStatsCast() {
   const el = document.getElementById('stats-cast');
   if (!el) return;
+  // 내 관람 횟수
   const castMap = {};
   state.schedules.forEach(s => {
     if (!s.cast) return;
@@ -1636,37 +1637,60 @@ function renderStatsCast() {
     parts.forEach(p => { castMap[p] = (castMap[p] || 0) + 1; });
   });
 
+  // 총 공연 횟수 (showSchedule 기준)
+  const showMap = {};
+  const hasShowData = state.showSchedule && state.showSchedule.length > 0;
+  if (hasShowData) {
+    state.showSchedule.forEach(s => {
+      if (!s.cast) return;
+      const parts = s.cast.split(/[\/,]/).map(x => x.trim()).filter(Boolean);
+      parts.forEach(p => { showMap[p] = (showMap[p] || 0) + 1; });
+    });
+  }
+
   const allKnown = [...CAST_CONFIG.alex.actors, ...CAST_CONFIG.philos.actors];
   const unknownEntries = Object.entries(castMap)
     .filter(([name]) => !allKnown.includes(name))
     .sort((a, b) => b[1] - a[1]);
 
   const buildRows = (entries) => entries.map(([name, cnt]) => {
-    return `<tr><td>${name}</td><td style="color:var(--primary);font-weight:700">${cnt}회</td></tr>`;
+    const showCnt = showMap[name] || 0;
+    const showCell = hasShowData
+      ? `<td style="color:var(--text2);font-size:12px;text-align:right">${showCnt}회</td>`
+      : '';
+    return `<tr><td>${name}</td><td style="color:var(--primary);font-weight:700;text-align:right">${cnt}회</td>${showCell}</tr>`;
   }).join('');
 
-  const alexEntries = CAST_CONFIG.alex.actors.filter(a => castMap[a] > 0).map(a => [a, castMap[a]]);
-  const philosEntries = CAST_CONFIG.philos.actors.filter(a => castMap[a] > 0).map(a => [a, castMap[a]]);
+  // 관람 기록 없어도 showSchedule 배우는 0회로 포함
+  const alexEntries = CAST_CONFIG.alex.actors
+    .filter(a => castMap[a] > 0 || (hasShowData && showMap[a] > 0))
+    .map(a => [a, castMap[a] || 0]);
+  const philosEntries = CAST_CONFIG.philos.actors
+    .filter(a => castMap[a] > 0 || (hasShowData && showMap[a] > 0))
+    .map(a => [a, castMap[a] || 0]);
 
   const total = alexEntries.length + philosEntries.length + unknownEntries.length;
   if (!total) { el.innerHTML = '<div class="empty"><p>관람 기록이 없습니다</p></div>'; return; }
 
+  const colspan = hasShowData ? 3 : 2;
+  const thShow = hasShowData ? '<th style="text-align:right">총 공연</th>' : '';
+
   let tbody = '';
   if (alexEntries.length) {
-    tbody += `<tr><td colspan="2" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--primary);padding:6px 12px;letter-spacing:.5px">${CAST_CONFIG.alex.role}</td></tr>`;
+    tbody += `<tr><td colspan="${colspan}" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--primary);padding:6px 12px;letter-spacing:.5px">${CAST_CONFIG.alex.role}</td></tr>`;
     tbody += buildRows(alexEntries);
   }
   if (philosEntries.length) {
-    tbody += `<tr><td colspan="2" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--primary);padding:6px 12px;letter-spacing:.5px">${CAST_CONFIG.philos.role}</td></tr>`;
+    tbody += `<tr><td colspan="${colspan}" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--primary);padding:6px 12px;letter-spacing:.5px">${CAST_CONFIG.philos.role}</td></tr>`;
     tbody += buildRows(philosEntries);
   }
   if (unknownEntries.length) {
-    tbody += `<tr><td colspan="2" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--text2);padding:6px 12px;letter-spacing:.5px">기타</td></tr>`;
+    tbody += `<tr><td colspan="${colspan}" style="background:var(--surface2);font-size:11px;font-weight:700;color:var(--text2);padding:6px 12px;letter-spacing:.5px">기타</td></tr>`;
     tbody += buildRows(unknownEntries);
   }
 
   el.innerHTML = `<table class="stats-tbl">
-    <thead><tr><th>배우</th><th>관람 횟수</th></tr></thead>
+    <thead><tr><th>배우</th><th style="text-align:right">내 관람</th>${thShow}</tr></thead>
     <tbody>${tbody}</tbody>
   </table>`;
 }
