@@ -1,8 +1,9 @@
-const CACHE_NAME = 'outcast-v1';
+const CACHE_NAME = 'outcast-v2';
 const ASSETS = [
   './',
   './index.html',
-  './icon.jpg',
+  './icon-192.png',
+  './icon-512.png',
   './manifest.json'
 ];
 
