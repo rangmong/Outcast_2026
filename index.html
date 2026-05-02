@@ -470,11 +470,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">날짜</label>
-<<<<<<< HEAD
         <div id="f-date-wrap"><input class="form-input" id="f-date" type="date" onchange="onScheduleDateChange()"></div>
-=======
-        <input class="form-input" id="f-date" type="date" onchange="onScheduleDateChange()">
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
       </div>
       <div class="form-group">
         <label class="form-label">시간</label>
@@ -488,11 +484,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
       </label>
     </div>
     <div id="f-show-sched-info" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6">
-<<<<<<< HEAD
       <span style="font-size:11px;font-weight:700;color:var(--primary);letter-spacing:.5px">저장된 공연 일정</span>
-=======
-      <span style="font-size:11px;font-weight:700;color:var(--primary);letter-spacing:.5px">📡 저장된 공연 일정</span>
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
       <div id="f-show-sched-info-content" style="margin-top:4px"></div>
     </div>
 
@@ -510,19 +502,11 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">알렉산드로스</label>
-<<<<<<< HEAD
         <input class="form-input" id="f-cast-alex" type="text" placeholder="알렉산드로스">
       </div>
       <div class="form-group">
         <label class="form-label">필로스</label>
         <input class="form-input" id="f-cast-philos" type="text" placeholder="필로스">
-=======
-        <input class="form-input" id="f-cast-alex" type="text" placeholder="배우 이름">
-      </div>
-      <div class="form-group">
-        <label class="form-label">필로스</label>
-        <input class="form-input" id="f-cast-philos" type="text" placeholder="배우 이름">
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
       </div>
     </div>
 
@@ -532,17 +516,11 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
     </div>
 
     <div class="form-group">
-<<<<<<< HEAD
       <label class="form-label">사용 할인</label>
       <select class="form-select" id="f-discount">
         <option value="none">없음</option>
         <option value="preview">프리뷰 할인</option>
         <option value="rewatch">재관람 할인</option>
-=======
-      <label class="form-label">사용 할인권</label>
-      <select class="form-select" id="f-discount">
-        <option value="none">없음</option>
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
         <option value="forty">40% 할인권</option>
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
@@ -636,17 +614,11 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
       </label>
     </div>
     <div class="form-group">
-<<<<<<< HEAD
       <label class="form-label">사용 할인</label>
       <select class="form-select" id="stamp-discount">
         <option value="none">없음</option>
         <option value="preview">프리뷰 할인</option>
         <option value="rewatch">재관람 할인</option>
-=======
-      <label class="form-label">사용 할인권</label>
-      <select class="form-select" id="stamp-discount">
-        <option value="none">없음</option>
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
         <option value="forty">40% 할인권</option>
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
@@ -694,7 +666,6 @@ const SEAT_LAYOUT = [
   { row: 'L', groups: [[1,7]] },
 ];
 
-<<<<<<< HEAD
 // ===== 배우 설정 =====
 const CAST_CONFIG = {
   alex: { role: '알렉산드로스', actors: ['이승준', '이세헌', '함태규'] },
@@ -706,8 +677,6 @@ function getRoleByActor(name) {
   return null;
 }
 
-=======
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
 // ===== STATE =====
 let state = {
   schedules: [],
@@ -972,16 +941,12 @@ function addCouponPack() {
 }
 
 function kindLabel(k) {
-<<<<<<< HEAD
   if (k === 'forty') return '40% 할인권';
   if (k === 'fifty') return '50% 할인권';
   if (k === 'proofpass') return '증빙패스';
   if (k === 'preview') return '프리뷰 할인';
   if (k === 'rewatch') return '재관람 할인';
   return k;
-=======
-  return k === 'forty' ? '40% 할인권' : k === 'fifty' ? '50% 할인권' : '증빙패스';
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
 }
 
 function renderCouponLog() {
@@ -1040,18 +1005,14 @@ function openAddModal(editId = null, preCardId = null) {
   sel.innerHTML = '<option value="">연동 안 함</option>' +
     state.rewatchCards.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
-<<<<<<< HEAD
   // Render date control (showSchedule 있으면 select, 없으면 date input)
   renderDateControl();
   const dateEl = document.getElementById('f-date');
 
-=======
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
   if (isEdit) {
     const s = state.schedules.find(x => x.id === editId);
     if (!s) return;
     const castParts = (s.cast || '').split('/').map(x => x.trim());
-<<<<<<< HEAD
     // 수정 시 해당 날짜가 select에 없으면 추가
     if (dateEl.tagName === 'SELECT') {
       if (!Array.from(dateEl.options).some(o => o.value === s.date)) {
@@ -1064,9 +1025,6 @@ function openAddModal(editId = null, preCardId = null) {
       }
     }
     dateEl.value = s.date;
-=======
-    document.getElementById('f-date').value = s.date;
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
     document.getElementById('f-holiday').checked = !!s.isHoliday;
     updateTimeSelect('f-date', 'f-time', 'f-holiday', s.time);
     document.getElementById('f-seat-row').value = s.seatRow;
@@ -1079,7 +1037,6 @@ function openAddModal(editId = null, preCardId = null) {
     document.getElementById('f-nanum').checked = !!s.isNanum;
     document.getElementById('f-memo').value = s.memo || '';
   } else {
-<<<<<<< HEAD
     // 기본 날짜: select면 가장 가까운 미래 날짜, input이면 오늘
     if (dateEl.tagName === 'SELECT') {
       const today = new Date().toISOString().slice(0, 10);
@@ -1088,9 +1045,6 @@ function openAddModal(editId = null, preCardId = null) {
     } else {
       dateEl.value = new Date().toISOString().slice(0,10);
     }
-=======
-    document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
     document.getElementById('f-holiday').checked = false;
     updateTimeSelect('f-date', 'f-time', 'f-holiday');
     document.getElementById('f-seat-row').value = '';
@@ -1148,7 +1102,6 @@ function updateShowSchedInfo() {
   const exact = matches.find(s => s.time === time);
   infoContent.innerHTML = matches.map(s => {
     const isSelected = s.time === time;
-<<<<<<< HEAD
     const castParts = (s.cast || '').split('/').map(x => x.trim()).filter(Boolean);
     const alexName = castParts[0] || '';
     const philosName = castParts[1] || '';
@@ -1158,10 +1111,6 @@ function updateShowSchedInfo() {
     ].filter(Boolean).join(' / ');
     return `<div style="padding:2px 0;${isSelected ? 'color:var(--text);font-weight:700' : ''}">
       ${isSelected ? '▶ ' : ''}${s.time}${castText ? ' · ' + castText : ''}${s.event ? ' · ' + s.event : ''}
-=======
-    return `<div style="padding:2px 0;${isSelected ? 'color:var(--text);font-weight:700' : ''}">
-      ${isSelected ? '▶ ' : ''}${s.time} ${s.cast ? '· ' + s.cast : ''}${s.event ? ' · 🎉' + s.event : ''}
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
     </div>`;
   }).join('');
 
@@ -1180,7 +1129,6 @@ function autoFillCast() {
   updateShowSchedInfo();
 }
 
-<<<<<<< HEAD
 function renderDateControl() {
   const wrap = document.getElementById('f-date-wrap');
   if (!wrap) return;
@@ -1198,8 +1146,6 @@ function renderDateControl() {
   }
 }
 
-=======
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
 function onStampDateChange() {
   updateTimeSelect('stamp-date', 'stamp-time', 'stamp-holiday');
 }
@@ -1212,16 +1158,12 @@ function saveSchedule() {
   const alexCast = document.getElementById('f-cast-alex').value.trim();
   const philosCast = document.getElementById('f-cast-philos').value.trim();
   const cast = [alexCast, philosCast].filter(Boolean).join(' / ');
-<<<<<<< HEAD
   let event = document.getElementById('f-event').value.trim();
   // showSchedule 이벤트 연동: 이벤트 미입력 시 자동 채움
   if (!event && date && time) {
     const _sm = state.showSchedule.find(s => s.date === date && s.time === time);
     if (_sm && _sm.event) event = _sm.event;
   }
-=======
-  const event = document.getElementById('f-event').value.trim();
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
   const discountUsed = document.getElementById('f-discount').value;
   const cardId = document.getElementById('f-card').value;
   const isNanum = document.getElementById('f-nanum').checked;
@@ -1239,11 +1181,7 @@ function saveSchedule() {
     const old = state.schedules[idx];
 
     // Coupon reversal
-<<<<<<< HEAD
     if (['forty', 'fifty', 'proofpass'].includes(old.discountUsed)) {
-=======
-    if (old.discountUsed && old.discountUsed !== 'none') {
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
       state.coupons[old.discountUsed] = (state.coupons[old.discountUsed] || 0) + 1;
     }
     // Remove stamp from old card
@@ -1251,11 +1189,7 @@ function saveSchedule() {
       removeStampFromCard(old.cardId, editId);
     }
     // Apply new coupon
-<<<<<<< HEAD
     if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
-=======
-    if (discountUsed !== 'none') {
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
       state.coupons[discountUsed] = Math.max(0, (state.coupons[discountUsed] || 0) - 1);
       state.couponLogs.unshift({ id: uuid(), date: today, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1 });
     }
@@ -1267,11 +1201,7 @@ function saveSchedule() {
   } else {
     const id = uuid();
     // Coupon usage
-<<<<<<< HEAD
     if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
-=======
-    if (discountUsed !== 'none') {
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
       if ((state.coupons[discountUsed] || 0) <= 0) {
         showToast('❗ 해당 할인권이 없습니다'); return;
       }
@@ -1303,11 +1233,7 @@ function deleteSchedule(id) {
     confirmClass: 'btn-danger',
     cancelText: '취소',
     onConfirm: () => {
-<<<<<<< HEAD
       if (['forty', 'fifty', 'proofpass'].includes(s.discountUsed)) {
-=======
-      if (s.discountUsed && s.discountUsed !== 'none') {
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
         state.coupons[s.discountUsed] = (state.coupons[s.discountUsed] || 0) + 1;
       }
       if (s.cardId && !s.isNanum) {
@@ -1610,11 +1536,7 @@ function saveStampOnly() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-<<<<<<< HEAD
   if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
-=======
-  if (discountUsed !== 'none') {
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
     if ((state.coupons[discountUsed] || 0) <= 0) {
       showToast('❗ 해당 할인권이 없습니다'); return;
     }
@@ -1711,7 +1633,6 @@ function renderStatsCast() {
   state.schedules.forEach(s => {
     if (!s.cast) return;
     const parts = s.cast.split(/[\/,]/).map(x => x.trim()).filter(Boolean);
-<<<<<<< HEAD
     parts.forEach(p => { castMap[p] = (castMap[p] || 0) + 1; });
   });
 
@@ -1747,17 +1668,6 @@ function renderStatsCast() {
   el.innerHTML = `<table class="stats-tbl">
     <thead><tr><th>배우</th><th>관람 횟수</th></tr></thead>
     <tbody>${tbody}</tbody>
-=======
-    parts.forEach(p => {
-      castMap[p] = (castMap[p] || 0) + 1;
-    });
-  });
-  const entries = Object.entries(castMap).sort((a,b) => b[1]-a[1]);
-  if (!entries.length) { el.innerHTML = '<div class="empty"><p>관람 기록이 없습니다</p></div>'; return; }
-  el.innerHTML = `<table class="stats-tbl">
-    <thead><tr><th>배우</th><th>관람 횟수</th></tr></thead>
-    <tbody>${entries.map(([name,cnt])=>`<tr><td>${name}</td><td style="color:var(--primary);font-weight:700">${cnt}회</td></tr>`).join('')}</tbody>
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
   </table>`;
 }
 
@@ -1769,7 +1679,6 @@ function renderStatsPair() {
     if (!s.cast) return;
     const parts = s.cast.split(/[\/,]/).map(x => x.trim()).filter(Boolean);
     if (parts.length < 2) return;
-<<<<<<< HEAD
     const alexParts = parts.filter(p => CAST_CONFIG.alex.actors.includes(p));
     const philosParts = parts.filter(p => CAST_CONFIG.philos.actors.includes(p));
     if (alexParts.length && philosParts.length) {
@@ -1802,20 +1711,6 @@ function renderStatsPair() {
     }
     return `<div class="pair-row"><span>${label}</span><span style="color:var(--primary);font-weight:700">${cnt}회</span></div>`;
   }).join('');
-=======
-    for (let i = 0; i < parts.length; i++) {
-      for (let j = i+1; j < parts.length; j++) {
-        const key = [parts[i], parts[j]].sort().join(' & ');
-        pairMap[key] = (pairMap[key] || 0) + 1;
-      }
-    }
-  });
-  const entries = Object.entries(pairMap).sort((a,b)=>b[1]-a[1]);
-  if (!entries.length) { el.innerHTML = '<div class="empty"><p>페어 데이터가 없습니다</p></div>'; return; }
-  el.innerHTML = entries.map(([pair,cnt])=>`
-    <div class="pair-row"><span>${pair}</span><span style="color:var(--primary);font-weight:700">${cnt}회</span></div>
-  `).join('');
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
 }
 
 function renderHeatmap() {
@@ -1971,7 +1866,6 @@ async function fetchScheduleData() {
       const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
       return { date: cols[0]||'', time: cols[1]||'', cast: cols[2]||'', event: cols[3]||'' };
     }).filter(s => s.date);
-<<<<<<< HEAD
     // 기존 일정 이벤트 업데이트
     let updatedCount = 0;
     state.schedules.forEach(sched => {
@@ -1989,12 +1883,6 @@ async function fetchScheduleData() {
       ? `✅ ${state.showSchedule.length}개 일정 불러옴 · ${updatedCount}개 이벤트 업데이트`
       : `✅ ${state.showSchedule.length}개 일정을 불러왔습니다`;
     showToast(fetchMsg);
-=======
-    state.settings.lastScheduleUpdate = new Date().toISOString().slice(0,10);
-    saveState();
-    renderScheduleUpdateDate();
-    showToast(`✅ ${state.showSchedule.length}개 일정을 불러왔습니다`);
->>>>>>> 77475771a0dd7f2df594637be85a5eb266f1e41d
   } catch(e) {
     showToast('❌ 불러오기 실패: 네트워크를 확인해주세요');
   }
