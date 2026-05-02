@@ -1128,7 +1128,8 @@ function confirmCouponChange() {
     type: delta > 0 ? '획득' : '사용',
     kind,
     memo: memo || defaultMemo,
-    qty: Math.abs(delta)
+    qty: Math.abs(delta),
+    manual: true
   });
   recalcCoupons();
   saveState();
@@ -1178,8 +1179,17 @@ function renderCouponLog() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>기록이 없습니다</p></div>';
     return;
   }
-  el.innerHTML = state.couponLogs.slice(0,50).map(log => {
+  const sorted = [...state.couponLogs].sort((a, b) => {
+    const da = (a.date || '') + (a.time || '');
+    const db = (b.date || '') + (b.time || '');
+    return db.localeCompare(da);
+  });
+  el.innerHTML = sorted.slice(0, 50).map(log => {
     const timeStr = log.time ? ` ${log.time}` : '';
+    const canDelete = !!log.manual;
+    const delBtn = canDelete
+      ? `<button class="btn btn-sm" style="flex-shrink:0;padding:0 8px;height:30px;background:none;border:1px solid var(--border);color:var(--danger);border-radius:8px;font-size:12px" onclick="deleteCouponLog('${log.id}')">삭제</button>`
+      : `<span style="flex-shrink:0;width:44px"></span>`;
     return `
     <div class="log-item">
       <span class="log-badge ${log.type==='획득'?'log-gain':'log-use'}">${log.type}</span>
@@ -1187,9 +1197,10 @@ function renderCouponLog() {
         <div style="font-weight:600">${kindLabel(log.kind)}${log.qty&&log.qty>1?` × ${log.qty}`:''}</div>
         <div class="log-memo">${log.date}${timeStr}${log.memo?' · '+log.memo:''}</div>
       </div>
-      <button class="btn btn-sm" style="flex-shrink:0;padding:0 8px;height:30px;background:none;border:1px solid var(--border);color:var(--danger);border-radius:8px;font-size:12px" onclick="deleteCouponLog('${log.id}')">삭제</button>
+      ${delBtn}
     </div>
-  `}).join('');
+  `;
+  }).join('');
 }
 
 function deleteCouponLog(logId) {
