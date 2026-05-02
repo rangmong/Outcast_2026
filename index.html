@@ -538,7 +538,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
 
     <div class="form-group">
       <label class="form-label">이벤트</label>
-      <input class="form-input" id="f-event" type="text" placeholder="예: 포토타임, 무대인사 등">
+      <input class="form-input" id="f-event" type="text" placeholder="예: 프리뷰, 포토카드 증정 등">
     </div>
 
     <div class="form-group">
@@ -550,6 +550,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <option value="forty">40% 할인권</option>
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
+        <option value="onsite">현매 할인</option>
       </select>
     </div>
 
@@ -631,7 +632,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
     </div>
     <div class="form-group">
       <label class="form-label">메모 (선택)</label>
-      <input class="form-input" id="cc-memo" type="text" placeholder="예: 재관람카드 3회차 달성">
+      <input class="form-input" id="cc-memo" type="text" placeholder="예: 할인권 나눔">
     </div>
     <div class="btn-group">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-coupon-change')">취소</button>
@@ -652,7 +653,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
     </div>
     <div class="form-group">
       <label class="form-label">메모 (선택)</label>
-      <input class="form-input" id="pack-memo" type="text" placeholder="예: 재관람카드 7회차 달성">
+      <input class="form-input" id="pack-memo" type="text" placeholder="예: 쿠폰팩 증정">
     </div>
     <div class="btn-group">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-coupon-pack')">취소</button>
@@ -692,11 +693,12 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <option value="forty">40% 할인권</option>
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
+        <option value="onsite">현매 할인</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">한 줄 메모</label>
-      <textarea class="form-textarea" id="stamp-memo" placeholder="이번 공연 메모..."></textarea>
+      <textarea class="form-textarea" id="stamp-memo" placeholder="예: 도장 나눔"></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">적립 수</label>
@@ -1169,6 +1171,7 @@ function kindLabel(k) {
   if (k === 'polaroid') return '폴라로이드 📸';
   if (k === 'preview') return '프리뷰 할인';
   if (k === 'rewatch') return '재관람 할인';
+  if (k === 'onsite') return '현장예매 할인';
   return k;
 }
 
