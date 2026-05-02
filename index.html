@@ -1153,7 +1153,7 @@ function addCouponPack() {
   const memo = document.getElementById('pack-memo').value.trim() || '쿠폰팩 추가';
   const kinds = ['forty', 'fifty', 'proofpass'];
   kinds.forEach(kind => {
-    state.couponLogs.unshift({ id: uuid(), date, type: '획득', kind, memo, qty: 1 });
+    state.couponLogs.unshift({ id: uuid(), date, type: '획득', kind, memo, qty: 1, manual: true });
   });
   recalcCoupons();
   saveState();
