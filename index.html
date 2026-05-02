@@ -2119,8 +2119,6 @@ function saveStampEdit() {
     }
   }
   if (finalCard) sortStampsByDate(finalCard);
-  if (newCardId !== cardId && srcCard) recalculateMilestones(srcCard);
-  if (finalCard) recalculateMilestones(finalCard);
 
   saveState();
   renderAll();
@@ -2176,8 +2174,6 @@ function onCardDrop(e, targetCardId) {
   const stamp = srcCard.stamps.splice(stampIdx, 1)[0];
   tgtCard.stamps.push(stamp);
   sortStampsByDate(tgtCard);
-  recalculateMilestones(srcCard);
-  recalculateMilestones(tgtCard);
 
   // Update schedule's cardId
   if (stamp.scheduleId) {
