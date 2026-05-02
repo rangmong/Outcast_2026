@@ -998,6 +998,7 @@ function renderNextSchedule() {
   const seat = next.seatRow && next.seatNum ? `${next.seatRow}열 ${next.seatNum}번` : '-';
   const alexName = next.alex || '';
   const philosName = next.philos || '';
+  const discLabel = next.discountUsed && next.discountUsed !== 'none' ? kindLabel(next.discountUsed) : null;
   const cast = alexName || philosName
     ? [alexName ? `알렉산드로스. ${alexName}` : '', philosName ? `필로스. ${philosName}` : ''].filter(Boolean).join('  ')
     : (next.cast || '-');
@@ -1040,6 +1041,7 @@ function renderNextSchedule() {
       <div class="next-sched-rows">
         <div class="next-sched-row"><span class="next-sched-key">캐스트</span><span class="next-sched-val">${cast}</span></div>
         <div class="next-sched-row"><span class="next-sched-key">좌석</span><span class="next-sched-val">${seat}</span></div>
+        ${discLabel?`<div class="next-sched-row"><span class="next-sched-key">할인권</span><span class="next-sched-val">🎫 ${discLabel}</span></div>`:''}
         <div class="next-sched-row"><span class="next-sched-key">이벤트</span><span class="next-sched-val">${event}</span></div>
         <div class="next-sched-row"><span class="next-sched-key">메모</span><span class="next-sched-val">${memo}</span></div>
         ${rwInfoHtml}
@@ -1411,20 +1413,33 @@ function saveSchedule() {
     if (idx === -1) return;
     const old = state.schedules[idx];
 
-    // Coupon reversal
-    if (['forty', 'fifty', 'proofpass'].includes(old.discountUsed)) {
-      state.coupons[old.discountUsed] = (state.coupons[old.discountUsed] || 0) + 1;
+    // Coupon reversal / refresh
+    const oldDiscount = old.discountUsed;
+    const existingLogIdx = state.couponLogs.findIndex(l => l.scheduleId === editId && l.type === '사용');
+    if (oldDiscount === discountUsed && ['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
+      // 동일 할인권 → 날짜/메모만 업데이트 (수량 변화 없음)
+      if (existingLogIdx !== -1) {
+        state.couponLogs[existingLogIdx].date = date;
+        state.couponLogs[existingLogIdx].memo = `${date} 관람 사용`;
+      } else {
+        state.couponLogs.unshift({ id: uuid(), date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
+      }
+    } else {
+      // 할인권 변경 / 제거 / 신규 적용
+      if (['forty', 'fifty', 'proofpass'].includes(oldDiscount)) {
+        state.coupons[oldDiscount] = (state.coupons[oldDiscount] || 0) + 1;
+        if (existingLogIdx !== -1) state.couponLogs.splice(existingLogIdx, 1);
+      }
+      if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
+        state.coupons[discountUsed] = Math.max(0, (state.coupons[discountUsed] || 0) - 1);
+        state.couponLogs.unshift({ id: uuid(), date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
+      }
     }
+    state.schedules[idx] = { ...old, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     // Remove stamp from old card
     if (old.cardId && !old.isNanum) {
       removeStampFromCard(old.cardId, editId);
     }
-    // Apply new coupon
-    if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
-      state.coupons[discountUsed] = Math.max(0, (state.coupons[discountUsed] || 0) - 1);
-      state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
-    }
-    state.schedules[idx] = { ...old, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     // Add stamp to new card (수정 시 1개만)
     if (cardId && !isNanum) {
       addStampToCard(cardId, editId, date);
@@ -1487,16 +1502,9 @@ function deleteSchedule(id) {
         state.coupons[s.discountUsed] = (state.coupons[s.discountUsed] || 0) + 1;
       }
       if (s.cardId && !s.isNanum) {
-        // 마일스톤 역산
         const card = state.rewatchCards.find(c => c.id === s.cardId);
-        if (card) {
-          const stampIdx = card.stamps.findIndex(st => st.scheduleId === id);
-          if (stampIdx !== -1) {
-            const stampNum = stampIdx + 1;
-            if ([3, 5, 7].includes(stampNum)) reverseMilestone(s.cardId, stampNum);
-          }
-        }
         removeStampFromCard(s.cardId, id);
+        if (card) recalculateMilestones(card, false);
       }
       state.schedules = state.schedules.filter(x => x.id !== id);
       saveState();
@@ -1531,6 +1539,7 @@ function getStampInfo(scheduleId) {
 
 function renderScheduleItem(s, onclick) {
   const stampInfo = s.isNanum ? null : getStampInfo(s.id);
+  const discInfo = s.discountUsed && s.discountUsed !== 'none' ? kindLabel(s.discountUsed) : null;
   const alexName = s.alex || '';
   const philosName = s.philos || '';
   const castDisplay = alexName || philosName
@@ -1547,6 +1556,7 @@ function renderScheduleItem(s, onclick) {
       <div class="sched-sub">💺 ${s.seatRow||'-'}열 ${s.seatNum||'-'}번${s.event?' · 🎉'+s.event:''}</div>
       ${s.memo?`<div class="sched-memo">💬 ${s.memo}</div>`:''}
       ${stampInfo?`<span class="stamp-badge">📑 ${stampInfo}</span>`:''}
+      ${discInfo?`<span class="stamp-badge" style="background:var(--accent);opacity:.85">🎫 ${discInfo}</span>`:''}
     </div>
   `;
 }
@@ -1676,8 +1686,7 @@ function addStampToCard(cardId, scheduleId, date, time = '') {
   if (!card || card.stamps.length >= 7) return;
   card.stamps.push({ scheduleId, date, time });
   sortStampsByDate(card);
-  const stampNum = card.stamps.length;
-  checkMilestone(card, stampNum, date);
+  recalculateMilestones(card);
 }
 
 function sortStampsByDate(card) {
@@ -1736,6 +1745,46 @@ function checkMilestone(card, stampNum, stampDate) {
     state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'fifty', memo: `${card.name} 7회차 달성 - 50% 할인권 및 OST 획득`, qty: 1, cardId: card.id, stampNum: stampNum });
     showToast('🎶 7회차 달성! 50% 할인권 및 OST 획득!');
   }
+}
+
+// 도장 순서 기준으로 마일스톤 전체 재계산
+function recalculateMilestones(card, showToasts = true) {
+  // 기존 마일스톤 로그 확인 (신규 달성 토스트 판단용)
+  const prevMilestones = new Set(
+    state.couponLogs
+      .filter(l => l.cardId === card.id && [3, 5, 7].includes(l.stampNum))
+      .map(l => l.stampNum)
+  );
+  // 기존 마일스톤 로그 제거 + 쿠폰 수량 역산
+  [3, 5, 7].forEach(num => {
+    const idx = state.couponLogs.findIndex(l => l.cardId === card.id && l.stampNum === num);
+    if (idx !== -1) {
+      const log = state.couponLogs[idx];
+      if (log.type === '획득') {
+        state.coupons[log.kind] = Math.max(0, (state.coupons[log.kind] || 0) - (log.qty ?? 1));
+      }
+      state.couponLogs.splice(idx, 1);
+    }
+  });
+  // 정렬된 도장 순서 기준으로 마일스톤 재등록
+  [3, 5, 7].forEach(num => {
+    if (card.stamps.length >= num) {
+      const stamp = card.stamps[num - 1];
+      const logDate = (stamp && stamp.date) || new Date().toISOString().slice(0, 10);
+      if (num === 3) {
+        state.coupons.forty = (state.coupons.forty || 0) + 2;
+        state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2, cardId: card.id, stampNum: 3 });
+        if (showToasts && !prevMilestones.has(3)) showToast('🎉 3회차 달성! 40% 할인권 2장 획득!');
+      } else if (num === 5) {
+        state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'polaroid', memo: `${card.name} 5회차 달성 - 폴라 획득`, qty: 1, cardId: card.id, stampNum: 5 });
+        if (showToasts && !prevMilestones.has(5)) showToast('📸 5회차 달성! 폴라 획득!');
+      } else if (num === 7) {
+        state.coupons.fifty = (state.coupons.fifty || 0) + 1;
+        state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'fifty', memo: `${card.name} 7회차 달성 - 50% 할인권 및 OST 획득`, qty: 1, cardId: card.id, stampNum: 7 });
+        if (showToasts && !prevMilestones.has(7)) showToast('🎶 7회차 달성! 50% 할인권 및 OST 획득!');
+      }
+    }
+  });
 }
 
 function rewardLabel(count) {
@@ -1934,9 +1983,9 @@ function saveStampOnly() {
   // qty만큼 도장 추가
   for (let i = 0; i < qty; i++) {
     card.stamps.push({ scheduleId: null, date, time, memo });
-    checkMilestone(card, card.stamps.length, date);
   }
   sortStampsByDate(card);
+  recalculateMilestones(card);
   const stampNum = card.stamps.length;
 
   saveState();
@@ -2067,10 +2116,11 @@ function saveStampEdit() {
     if (actualAdd < toAdd) showToast(`⚠️ 남은 자리 부족으로 ${actualAdd}개만 추가 적립했습니다`);
     for (let i = 0; i < actualAdd; i++) {
       finalCard.stamps.push({ scheduleId: null, date: newDate, time: newTime });
-      checkMilestone(finalCard, finalCard.stamps.length);
     }
   }
   if (finalCard) sortStampsByDate(finalCard);
+  if (newCardId !== cardId && srcCard) recalculateMilestones(srcCard);
+  if (finalCard) recalculateMilestones(finalCard);
 
   saveState();
   renderAll();
@@ -2091,9 +2141,8 @@ function deleteStampEdit() {
     onConfirm: () => {
       const card = state.rewatchCards.find(c => c.id === cardId);
       if (!card) return;
-      const stampNum = stampIdx + 1;
-      if ([3, 5, 7].includes(stampNum)) reverseMilestone(cardId, stampNum);
       card.stamps.splice(stampIdx, 1);
+      recalculateMilestones(card, false);
       saveState();
       renderAll();
       closeModal('modal-stamp-edit');
@@ -2127,6 +2176,8 @@ function onCardDrop(e, targetCardId) {
   const stamp = srcCard.stamps.splice(stampIdx, 1)[0];
   tgtCard.stamps.push(stamp);
   sortStampsByDate(tgtCard);
+  recalculateMilestones(srcCard);
+  recalculateMilestones(tgtCard);
 
   // Update schedule's cardId
   if (stamp.scheduleId) {
