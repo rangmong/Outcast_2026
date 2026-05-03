@@ -59,7 +59,7 @@ body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Noto Sans KR',sa
 /* Schedule item */
 .sched-item{background:var(--surface2);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:transform .1s,opacity .1s;border:1px solid var(--border);position:relative;touch-action:manipulation}
 .sched-item:active{transform:scale(.98);opacity:.85}
-.sched-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sched-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 .sched-date{font-size:13px;font-weight:700;color:var(--primary)}
 .tag{display:inline-block;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700}
 .tag-upcoming{background:#e8f0ea;color:#2e6040}
@@ -242,6 +242,19 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
 .confirm-msg{font-size:13px;color:var(--text2);text-align:center;line-height:1.65;margin-bottom:22px;white-space:pre-line}
 .confirm-btns{display:flex;gap:8px}
 .confirm-btns .btn{flex:1;height:46px;font-size:14px}
+/* Receipt image upload */
+.receipt-preview-wrap{position:relative;margin-bottom:8px}
+.receipt-preview-wrap img{width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);max-height:220px;object-fit:contain;background:var(--surface2);display:block}
+.receipt-remove-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;line-height:1;touch-action:manipulation;padding:0}
+.btn-receipt{background:transparent!important;border:1.5px dashed var(--primary)!important;color:var(--primary)!important;font-size:12px!important}
+/* Receipt viewer modal */
+.receipt-view-img{width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);object-fit:contain;max-height:65dvh;background:var(--surface2);display:block}
+/* Receipt view btn in schedule items */
+.btn-receipt-view{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;border:1.5px solid var(--primary);background:transparent;color:var(--primary);font-size:11px;font-weight:700;cursor:pointer;margin-top:5px;touch-action:manipulation}
+.btn-receipt-view:active{background:var(--primary);color:#fff}
+/* Receipt view btn in next schedule card */
+.btn-receipt-view-card{display:inline-flex;align-items:center;gap:4px;padding:5px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.7);background:rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;margin-top:8px}
+.btn-receipt-view-card:active{background:rgba(255,255,255,.35)}
 </style>
 </head>
 <body>
@@ -249,7 +262,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
 <!-- Header -->
 <header class="app-header">
   <div class="app-title"><span id="title-emoji">🕊️</span> 아웃캐스트</div>
-  <button class="btn-add-record" onclick="openAddModal()">＋ 기록</button>
+  <button class="btn-add-record" onclick="openScheduleAddModal()">＋ 기록</button>
 </header>
 
 <!-- Tab Content -->
@@ -584,6 +597,16 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
       <textarea class="form-textarea" id="f-memo" placeholder="이번 공연 메모..."></textarea>
     </div>
 
+    <div class="form-group">
+      <label class="form-label">내역서 이미지 <span style="font-weight:400;color:var(--text2)">(선택)</span></label>
+      <div id="f-receipt-preview" class="receipt-preview-wrap" style="display:none">
+        <img id="f-receipt-img" src="" alt="내역서">
+        <button type="button" class="receipt-remove-btn" onclick="removeReceiptImage('f')">✕</button>
+      </div>
+      <button type="button" class="btn btn-sm btn-full btn-receipt" onclick="document.getElementById('f-receipt-input').click()">📎 내역서 이미지 첨부</button>
+      <input type="file" id="f-receipt-input" accept="image/*" style="display:none" onchange="onReceiptFileChange('f', this)">
+    </div>
+
     <div class="btn-group">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-add')">취소</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveSchedule()">저장</button>
@@ -708,6 +731,17 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <button type="button" class="stamp-qty-btn" id="stamp-qty-3" onclick="setStampQty(3)"> 3회 (트리플)</button>
       </div>
     </div>
+
+    <div class="form-group">
+      <label class="form-label">내역서 이미지 <span style="font-weight:400;color:var(--text2)">(선택)</span></label>
+      <div id="stamp-receipt-preview" class="receipt-preview-wrap" style="display:none">
+        <img id="stamp-receipt-img" src="" alt="내역서">
+        <button type="button" class="receipt-remove-btn" onclick="removeReceiptImage('stamp')">✕</button>
+      </div>
+      <button type="button" class="btn btn-sm btn-full btn-receipt" onclick="document.getElementById('stamp-receipt-input').click()">📎 내역서 이미지 첨부</button>
+      <input type="file" id="stamp-receipt-input" accept="image/*" style="display:none" onchange="onReceiptFileChange('stamp', this)">
+    </div>
+
     <div class="btn-group">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-stamp-only')">취소</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveStampOnly()">도장 적립</button>
@@ -750,10 +784,33 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <button type="button" class="stamp-qty-btn" id="se-qty-3" onclick="setSEQty(3)"> 3회 (트리플)</button>
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">내역서 이미지 <span style="font-weight:400;color:var(--text2)">(선택)</span></label>
+      <div id="se-receipt-preview" class="receipt-preview-wrap" style="display:none">
+        <img id="se-receipt-img" src="" alt="내역서">
+        <button type="button" class="receipt-remove-btn" onclick="removeReceiptImage('se')">✕</button>
+      </div>
+      <button type="button" class="btn btn-sm btn-full btn-receipt" onclick="document.getElementById('se-receipt-input').click()">📎 내역서 이미지 첨부</button>
+      <input type="file" id="se-receipt-input" accept="image/*" style="display:none" onchange="onReceiptFileChange('se', this)">
+    </div>
     <div class="btn-group" style="gap:6px">
       <button class="btn btn-danger" style="flex:1" onclick="deleteStampEdit()">🗑 삭제</button>
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-stamp-edit')">취소</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveStampEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Viewer Modal -->
+<div class="overlay" id="modal-receipt">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🧾 내역서</div>
+    <div style="text-align:center">
+      <img id="receipt-view-img" src="" alt="내역서" class="receipt-view-img">
+    </div>
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-secondary btn-full" onclick="closeModal('modal-receipt')">닫기</button>
     </div>
   </div>
 </div>
@@ -772,6 +829,97 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
 <div class="toast" id="toast"></div>
 
 <script>
+// ===== IndexedDB (내역서 이미지 저장) =====
+let _idbPromise = null;
+function getReceiptDB() {
+  if (_idbPromise) return _idbPromise;
+  _idbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open('outcast_receipts_db', 1);
+    req.onupgradeneeded = e => { e.target.result.createObjectStore('receipts'); };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => { _idbPromise = null; reject(e.target.error); };
+  });
+  return _idbPromise;
+}
+async function saveReceipt(key, dataUrl) {
+  const db = await getReceiptDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('receipts', 'readwrite');
+    tx.objectStore('receipts').put(dataUrl, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+async function getReceipt(key) {
+  const db = await getReceiptDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('receipts', 'readonly');
+    const req = tx.objectStore('receipts').get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+async function deleteReceipt(key) {
+  try {
+    const db = await getReceiptDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('receipts', 'readwrite');
+      tx.objectStore('receipts').delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e) { /* 실패 무시 */ }
+}
+
+// ===== 이미지 업로드 임시 보관 =====
+const _receiptPending = {}; // { 'f': dataUrlOrNull, 'stamp': dataUrlOrNull }
+
+function onReceiptFileChange(prefix, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _receiptPending[prefix] = e.target.result;
+    const img = document.getElementById(prefix + '-receipt-img');
+    const preview = document.getElementById(prefix + '-receipt-preview');
+    if (img) img.src = e.target.result;
+    if (preview) preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeReceiptImage(prefix) {
+  _receiptPending[prefix] = null;
+  const img = document.getElementById(prefix + '-receipt-img');
+  const preview = document.getElementById(prefix + '-receipt-preview');
+  const input = document.getElementById(prefix + '-receipt-input');
+  if (img) img.src = '';
+  if (preview) preview.style.display = 'none';
+  if (input) input.value = '';
+}
+
+function _clearReceiptField(prefix) {
+  delete _receiptPending[prefix];
+  const img = document.getElementById(prefix + '-receipt-img');
+  const preview = document.getElementById(prefix + '-receipt-preview');
+  const input = document.getElementById(prefix + '-receipt-input');
+  if (img) img.src = '';
+  if (preview) preview.style.display = 'none';
+  if (input) input.value = '';
+}
+
+async function openReceiptViewer(key) {
+  try {
+    const dataUrl = await getReceipt(key);
+    if (!dataUrl) { showToast('❌ 내역서를 불러올 수 없습니다'); return; }
+    const imgEl = document.getElementById('receipt-view-img');
+    if (imgEl) imgEl.src = dataUrl;
+    openModal('modal-receipt');
+  } catch(e) {
+    showToast('❌ 내역서를 불러올 수 없습니다');
+  }
+}
+
 // ===== 링크아트센터드림 드림2관 좌석 레이아웃 =====
 // groups: [시작번호, 끝번호] 쌍의 배열 (통로로 구분)
 const SEAT_LAYOUT = [
@@ -814,13 +962,17 @@ function saveState() { localStorage.setItem('outcast_app_state', JSON.stringify(
 function loadState() {
   const s = localStorage.getItem('outcast_app_state');
   if (s) { try { state = Object.assign(state, JSON.parse(s)); } catch(e){} }
-  // 전체 카드 날짜→시간 순 정렬
+  // 전체 카드 날짜→시간 순 정렬 + stamp id 마이그레이션
   if (state.rewatchCards) {
     state.rewatchCards.forEach(card => {
       card.stamps.sort((a, b) => {
         const da = (a.date || '') + (a.time || '');
         const db = (b.date || '') + (b.time || '');
         return da.localeCompare(db);
+      });
+      // 수동 도장에 id가 없으면 부여
+      card.stamps.forEach(stamp => {
+        if (!stamp.id) stamp.id = uuid();
       });
     });
   }
@@ -892,13 +1044,6 @@ function applyTitleEmoji() {
 }
 
 // ===== TOAST =====
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2400);
-}
-
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1038,8 +1183,13 @@ function renderNextSchedule() {
         <span class="next-sched-title">🗓 다음 관극 일정</span>
         <span class="next-sched-dday">${dday}</span>
       </div>
-      <div class="next-sched-date">${dateStr}</div>
-      <div class="next-sched-time">${next.time || '시간 미정'}</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+        <div>
+          <div class="next-sched-date" style="margin-bottom:2px">${dateStr}</div>
+          <div class="next-sched-time" style="margin-bottom:0">${next.time || '시간 미정'}</div>
+        </div>
+        ${next.hasReceipt ? `<button class="btn-receipt-view-card" style="flex-shrink:0;align-self:fixed-start" onclick="event.stopPropagation();openReceiptViewer('sched_${next.id}')">🧾 내역서보기</button>` : ''}
+      </div>
       <div class="next-sched-rows">
         <div class="next-sched-row"><span class="next-sched-key">캐스트</span><span class="next-sched-val">${cast}</span></div>
         <div class="next-sched-row"><span class="next-sched-key">좌석</span><span class="next-sched-val">${seat}</span></div>
@@ -1227,7 +1377,7 @@ function deleteCouponLog(logId) {
 }
 
 // ===== SCHEDULE =====
-function openAddModal(editId = null, preCardId = null) {
+function openScheduleAddModal(editId = null, preCardId = null) {
   const isEdit = !!editId;
   document.getElementById('modal-add-title').textContent = isEdit ? '✏️ 관람 기록 수정' : '📝 관람 기록 추가';
   document.getElementById('edit-id').value = editId || '';
@@ -1282,6 +1432,22 @@ function openAddModal(editId = null, preCardId = null) {
   const infoBox = document.getElementById('f-show-sched-info');
   if (infoBox) infoBox.style.display = 'none';
   updateShowSchedInfo();
+
+  // 이미지 필드 초기화
+  _clearReceiptField('f');
+  if (isEdit) {
+    const _editId = editId;
+    getReceipt(`sched_${_editId}`).then(dataUrl => {
+      if (dataUrl) {
+        _receiptPending['f'] = dataUrl;
+        const img = document.getElementById('f-receipt-img');
+        const preview = document.getElementById('f-receipt-preview');
+        if (img) img.src = dataUrl;
+        if (preview) preview.style.display = 'block';
+      }
+    }).catch(() => {});
+  }
+
   openModal('modal-add');
 }
 
@@ -1385,14 +1551,12 @@ function onStampDateChange() {
   updateTimeSelect('stamp-date', 'stamp-time', 'stamp-holiday');
 }
 
-function saveSchedule() {
-  const date = document.getElementById('f-date').value;
+async function saveSchedule() {  const date = document.getElementById('f-date').value;
   const time = document.getElementById('f-time').value;
   const seatRow = document.getElementById('f-seat-row').value.toUpperCase().trim();
   const seatNum = parseInt(document.getElementById('f-seat-num').value) || 0;
   const alexCast = document.getElementById('f-cast-alex').value.trim();
   const philosCast = document.getElementById('f-cast-philos').value.trim();
-  const cast = [alexCast, philosCast].filter(Boolean).join(' / ');
   let event = document.getElementById('f-event').value.trim();
   // showSchedule 이벤트 연동: 이벤트 미입력 시 자동 채움
   if (!event && date && time) {
@@ -1457,14 +1621,28 @@ function saveSchedule() {
         state.couponLogs.unshift({ id: uuid(), date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
       }
     }
-    state.schedules[idx] = { ...old, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
+    state.schedules[idx] = { ...old, date, time, seatRow, seatNum, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     // Remove stamp from old card
     if (old.cardId && !old.isNanum) {
       removeStampFromCard(old.cardId, editId);
     }
     // Add stamp to new card (수정 시 1개만)
     if (cardId && !isNanum) {
-      addStampToCard(cardId, editId, date);
+      const _added = addStampToCard(cardId, editId, date, time);
+      if (!_added) {
+        showToast('❗ 해당 카드에 같은 날짜·시간 도장이 이미 있어 도장은 연동되지 않았습니다');
+      }
+    }
+    // 이미지 저장/삭제
+    if (_receiptPending['f'] !== undefined) {
+      if (_receiptPending['f']) {
+        await saveReceipt(`sched_${editId}`, _receiptPending['f']);
+        state.schedules[idx].hasReceipt = true;
+      } else {
+        await deleteReceipt(`sched_${editId}`);
+        state.schedules[idx].hasReceipt = false;
+      }
+      delete _receiptPending['f'];
     }
   } else {
     const id = uuid();
@@ -1476,16 +1654,25 @@ function saveSchedule() {
       }
       state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: id });
     }
-    const sched = { id, date, time, seatRow, seatNum, cast, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
+    const sched = { id, date, time, seatRow, seatNum, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     state.schedules.push(sched);
     // Add stamp (첫 번째는 scheduleId 연결, 추가분은 null)
     if (cardId && !isNanum) {
-      addStampToCard(cardId, id, date, time);
-      for (let _qi = 1; _qi < stampQty; _qi++) {
-        addStampToCard(cardId, null, date, time);
+      const _added = addStampToCard(cardId, id, date, time);
+      if (!_added) {
+        showToast('❗ 해당 카드에 같은 날짜·시간 도장이 이미 있어 도장은 연동되지 않았습니다');
+      } else {
+        for (let _qi = 1; _qi < stampQty; _qi++) {
+          addStampToCard(cardId, null, date, time);
+        }
       }
-      // sortStampsByDate는 addStampToCard 내부에서 매 push마다 수행됨
     }
+    // 이미지 저장
+    if (_receiptPending['f']) {
+      await saveReceipt(`sched_${id}`, _receiptPending['f']);
+      sched.hasReceipt = true;
+    }
+    delete _receiptPending['f'];
   }
 
   recalcCoupons();
@@ -1515,6 +1702,7 @@ function deleteSchedule(id) {
         if (card) recalculateMilestones(card, false);
       }
       state.schedules = state.schedules.filter(x => x.id !== id);
+      deleteReceipt(`sched_${id}`);
       recalcCoupons();
       saveState();
       renderAll();
@@ -1554,12 +1742,16 @@ function renderScheduleItem(s, onclick) {
   const castDisplay = alexName || philosName
     ? [alexName ? `알렉산드로스. ${alexName}` : '', philosName ? `필로스. ${philosName}` : ''].filter(Boolean).join('  ')
     : (s.cast || '캐스트 미입력');
+  const receiptTag = s.hasReceipt
+    ? `<button class="btn-receipt-view" style="margin-left:auto;flex-shrink:0" onclick="event.stopPropagation();openReceiptViewer('sched_${s.id}')">🧾 내역서보기</button>`
+    : '';
   return `
     <div class="sched-item" onclick="${onclick}">
       <div class="sched-top">
         <span class="sched-date">${s.date}${s.time?' '+s.time:''}</span>
         ${getScheduleTag(s.date)}
         ${s.isNanum?'<span class="tag tag-nanum">나눔</span>':''}
+        ${receiptTag}
       </div>
       <div class="sched-cast">${castDisplay}</div>
       <div class="sched-sub">💺 ${s.seatRow||'-'}열 ${s.seatNum||'-'}번${s.event?' · 🎉'+s.event:''}</div>
@@ -1612,7 +1804,7 @@ function openDetail(id) {
   document.getElementById('detail-seat-map').innerHTML = buildSeatMap(s.seatRow, s.seatNum);
   requestAnimationFrame(() => applyHeatmapScale('detail-seat-map', 'detail-hm-outer'));
 
-  document.getElementById('btn-edit-schedule').onclick = () => { closeModal('modal-detail'); openAddModal(id); };
+  document.getElementById('btn-edit-schedule').onclick = () => { closeModal('modal-detail'); openScheduleAddModal(id); };
   document.getElementById('btn-del-schedule').onclick = () => deleteSchedule(id);
 
   openModal('modal-detail');
@@ -1690,12 +1882,20 @@ function addRewatchCard() {
   showToast(`📑 ${name} 추가됨`);
 }
 
+// 같은 카드에 동일 날짜+시간 도장이 있는지 확인 (excludeId: 수정 시 자기 자신 제외)
+function isDuplicateStamp(card, date, time, excludeId = null) {
+  if (!date || !time) return false;
+  return card.stamps.some(s => s.date === date && s.time === time && s.id !== excludeId);
+}
+
 function addStampToCard(cardId, scheduleId, date, time = '') {
   const card = state.rewatchCards.find(c => c.id === cardId);
-  if (!card || card.stamps.length >= 7) return;
-  card.stamps.push({ scheduleId, date, time });
+  if (!card || card.stamps.length >= 7) return false;
+  if (isDuplicateStamp(card, date, time)) return false;
+  card.stamps.push({ id: uuid(), scheduleId, date, time });
   sortStampsByDate(card);
   recalculateMilestones(card);
+  return true;
 }
 
 function sortStampsByDate(card) {
@@ -1795,7 +1995,7 @@ function rewardLabel(count) {
   return `(3회차: 40% 할인권)`;
 }
 
-function buildRewatchCard(card, isHome = false) {
+function buildRewatchCard(card) {
   const stampCount = card.stamps.length;
   const milestones = [3, 5, 7];
   const milestoneRewards = { 3: '40%×2 🎫', 5: '폴라 📸', 7: '50%+OST 🎶' };
@@ -1814,16 +2014,26 @@ function buildRewatchCard(card, isHome = false) {
       slotsHtml += `<div class="stamp-slot filled" ${msAttr} draggable="true"
         title="${sInfo ? sInfo.date + ' ' + (sInfo.time||'') : stamp.date}"
         ondragstart="onStampDragStart(event,'${card.id}',${i-1})"
-        ${isHome ? `onclick="openStampEditModal('${card.id}',${i-1})"` : ''}
+        ${sInfo ? `onclick="openScheduleAddModal('${sInfo.id}')"` : `onclick="openStampEditModal('${card.id}',${i-1})"`}
         >${_dateLine}<span class="stamp-num">${i}</span></div>`;
     } else {
-      const onclickAttr = isHome ? `onclick="stampSlotClick('${card.id}', ${i-1})"` : '';
-      const cursorStyle = isHome ? 'cursor:pointer;' : '';
+      const onclickAttr = `onclick="stampSlotClick('${card.id}', ${i-1})"`;
+      const cursorStyle = 'cursor:pointer;';
       slotsHtml += `<div class="stamp-slot" ${msAttr} ${onclickAttr} style="${cursorStyle}">${i}</div>`;
     }
   }
 
   const ms3done = stampCount >= 3, ms5done = stampCount >= 5, ms7done = stampCount >= 7;
+
+  // 수동 도장 중 내역서 있는 것 목록
+  const manualReceiptStamps = card.stamps.filter(s => !s.scheduleId && s.hasReceipt);
+  const manualReceiptHtml = manualReceiptStamps.length > 0
+    ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        ${manualReceiptStamps.map(s => `
+          <button class="btn-receipt-view" onclick="openReceiptViewer('stamp_${s.id}')">🧾 ${stampDateLabel(s.date)} 내역서보기</button>
+        `).join('')}
+       </div>`
+    : '';
 
   return `
     <div class="rw-card" id="rw-${card.id}"
@@ -1851,6 +2061,7 @@ function buildRewatchCard(card, isHome = false) {
         <span class="ms-badge ms-5 ${ms5done?'ms-achieved':''}">5회: ${milestoneRewards[5]}</span>
         <span class="ms-badge ms-7 ${ms7done?'ms-achieved':''}">7회: ${milestoneRewards[7]}</span>
       </div>
+      ${manualReceiptHtml}
     </div>
   `;
 }
@@ -1862,7 +2073,7 @@ function renderRewatchCards() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📑</div><p>재관람카드가 없습니다</p></div>';
     return;
   }
-  el.innerHTML = state.rewatchCards.map(c => buildRewatchCard(c, true)).join('');
+  el.innerHTML = state.rewatchCards.map(c => buildRewatchCard(c)).join('');
 }
 
 function renderRewatchCardsInCoupon() {
@@ -1872,7 +2083,7 @@ function renderRewatchCardsInCoupon() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📑</div><p>재관람카드가 없습니다</p></div>';
     return;
   }
-  el.innerHTML = state.rewatchCards.map(c => buildRewatchCard(c, true)).join('');
+  el.innerHTML = state.rewatchCards.map(c => buildRewatchCard(c)).join('');
 }
 
 // ===== REWATCH CARD FROM MODAL =====
@@ -1909,7 +2120,7 @@ function stampSlotClick(cardId, slotIdx) {
     cancelText: '🎯 도장만 적립',
     cancelClass: 'btn-secondary',
     closeText: '닫기',
-    onConfirm: () => { openAddModal(null, cardId); },
+    onConfirm: () => { openScheduleAddModal(null, cardId); },
     onCancel: () => { openStampOnlyModal(cardId); }
   });
 }
@@ -1922,6 +2133,7 @@ function openStampOnlyModal(cardId) {
   document.getElementById('stamp-discount').value = 'none';
   document.getElementById('stamp-memo').value = '';
   setStampQty(1);
+  _clearReceiptField('stamp');
   openModal('modal-stamp-only');
 }
 
@@ -1942,7 +2154,7 @@ function setScheduleStampQty(qty) {
   if (inp) inp.value = qty;
 }
 
-function saveStampOnly() {
+async function saveStampOnly() {
   const cardIdEl = document.getElementById('stamp-card-id');
   const cardId = cardIdEl.value;
   const qty = parseInt(cardIdEl.dataset.qty || '1');
@@ -1956,6 +2168,12 @@ function saveStampOnly() {
   const card = state.rewatchCards.find(c => c.id === cardId);
   if (!card) { showToast('❗ 카드를 찾을 수 없습니다'); return; }
   if (card.stamps.length >= 7) { showToast('❗ 카드가 가득 찼습니다'); return; }
+
+  // 동일 날짜+시간 중복 체크
+  if (isDuplicateStamp(card, date, time)) {
+    showToast('❗ 이 카드에 같은 날짜·시간 도장이 이미 있습니다');
+    return;
+  }
 
   // 적립 후 초과 여부 검사
   const remaining = 7 - card.stamps.length;
@@ -1982,13 +2200,26 @@ function saveStampOnly() {
   }
 
   // qty만큼 도장 추가
+  const firstStampId = uuid();
   for (let i = 0; i < qty; i++) {
-    card.stamps.push({ scheduleId: null, date, time, memo });
+    const sid = i === 0 ? firstStampId : uuid();
+    card.stamps.push({ id: sid, scheduleId: null, date, time, memo });
   }
   sortStampsByDate(card);
   recalculateMilestones(card);
   const stampNum = card.stamps.length;
   recalcCoupons();
+
+  // 이미지 저장 (첫 번째 도장에 연결)
+  if (_receiptPending['stamp']) {
+    const stampObj = card.stamps.find(s => s.id === firstStampId);
+    if (stampObj) {
+      await saveReceipt(`stamp_${firstStampId}`, _receiptPending['stamp']);
+      stampObj.hasReceipt = true;
+    }
+  }
+  delete _receiptPending['stamp'];
+
   saveState();
   renderAll();
   closeModal('modal-stamp-only');
@@ -2057,6 +2288,21 @@ function openStampEditModal(cardId, stampIdx) {
   ).join('');
 
   setSEQty(1);
+
+  // 이미지 필드 초기화 후 기존 이미지 로드
+  _clearReceiptField('se');
+  if (stamp.id && stamp.hasReceipt) {
+    getReceipt(`stamp_${stamp.id}`).then(dataUrl => {
+      if (dataUrl) {
+        _receiptPending['se'] = dataUrl;
+        const img = document.getElementById('se-receipt-img');
+        const preview = document.getElementById('se-receipt-preview');
+        if (img) img.src = dataUrl;
+        if (preview) preview.style.display = 'block';
+      }
+    }).catch(() => {});
+  }
+
   openModal('modal-stamp-edit');
 }
 
@@ -2073,7 +2319,7 @@ function setSEQty(qty) {
   document.getElementById('modal-stamp-edit').dataset.qty = qty;
 }
 
-function saveStampEdit() {
+async function saveStampEdit() {
   const cardId = document.getElementById('se-card-id').value;
   const stampIdx = parseInt(document.getElementById('se-stamp-idx').value);
   const newCardId = document.getElementById('se-card-select').value;
@@ -2087,6 +2333,15 @@ function saveStampEdit() {
   if (!srcCard) return;
   const stamp = srcCard.stamps[stampIdx];
   if (!stamp) return;
+
+  // 동일 날짜+시간 중복 체크 (같은 카드 유지 시 자기 자신 제외, 다른 카드 이동 시 대상 카드 기준)
+  const targetCardForCheck = state.rewatchCards.find(c => c.id === newCardId);
+  const excludeId = newCardId === cardId ? stamp.id : null;
+  const checkCard = newCardId === cardId ? srcCard : (targetCardForCheck || srcCard);
+  if (isDuplicateStamp(checkCard, newDate, newTime, excludeId)) {
+    showToast('❗ 해당 카드에 같은 날짜·시간 도장이 이미 있습니다');
+    return;
+  }
 
   stamp.date = newDate;
   stamp.time = newTime;
@@ -2116,10 +2371,23 @@ function saveStampEdit() {
     const actualAdd = Math.min(toAdd, remaining);
     if (actualAdd < toAdd) showToast(`⚠️ 남은 자리 부족으로 ${actualAdd}개만 추가 적립했습니다`);
     for (let i = 0; i < actualAdd; i++) {
-      finalCard.stamps.push({ scheduleId: null, date: newDate, time: newTime });
+      finalCard.stamps.push({ id: uuid(), scheduleId: null, date: newDate, time: newTime });
     }
   }
   if (finalCard) sortStampsByDate(finalCard);
+
+  // 이미지 저장/삭제 (stamp.id 기준)
+  const stampId = stamp.id;
+  if (stampId && _receiptPending['se'] !== undefined) {
+    if (_receiptPending['se']) {
+      await saveReceipt(`stamp_${stampId}`, _receiptPending['se']);
+      stamp.hasReceipt = true;
+    } else {
+      await deleteReceipt(`stamp_${stampId}`);
+      stamp.hasReceipt = false;
+    }
+    delete _receiptPending['se'];
+  }
 
   saveState();
   renderAll();
@@ -2140,6 +2408,8 @@ function deleteStampEdit() {
     onConfirm: () => {
       const card = state.rewatchCards.find(c => c.id === cardId);
       if (!card) return;
+      const stamp = card.stamps[stampIdx];
+      if (stamp && stamp.id && stamp.hasReceipt) deleteReceipt(`stamp_${stamp.id}`);
       card.stamps.splice(stampIdx, 1);
       recalculateMilestones(card, false);
       saveState();
@@ -2172,7 +2442,14 @@ function onCardDrop(e, targetCardId) {
     return;
   }
 
-  const stamp = srcCard.stamps.splice(stampIdx, 1)[0];
+  const stamp = srcCard.stamps[stampIdx];
+  if (isDuplicateStamp(tgtCard, stamp.date, stamp.time)) {
+    showToast('❗ 대상 카드에 같은 날짜·시간 도장이 이미 있습니다');
+    dragSource = null;
+    return;
+  }
+
+  srcCard.stamps.splice(stampIdx, 1);
   tgtCard.stamps.push(stamp);
   sortStampsByDate(tgtCard);
   recalculateMilestones(srcCard, false);
@@ -2207,12 +2484,6 @@ function renderStatsCast() {
   state.schedules.forEach(s => {
     if (s.alex) castMap[s.alex] = (castMap[s.alex] || 0) + 1;
     if (s.philos) castMap[s.philos] = (castMap[s.philos] || 0) + 1;
-    // alex/philos 필드 없는 구 데이터 호환
-    if (!s.alex && !s.philos && s.cast) {
-      s.cast.split('/').map(x => x.trim()).filter(Boolean).forEach(p => {
-        castMap[p] = (castMap[p] || 0) + 1;
-      });
-    }
   });
 
   // 총 공연 횟수 (showSchedule 기준)
@@ -2279,8 +2550,8 @@ function renderStatsPair() {
   // 내 관람 페어 집계
   const pairMap = {};
   state.schedules.forEach(s => {
-    const alexName = s.alex || (s.cast ? s.cast.split('/')[0]?.trim() : '');
-    const philosName = s.philos || (s.cast ? s.cast.split('/')[1]?.trim() : '');
+    const alexName = s.alex || '';
+    const philosName = s.philos || '';
     if (!alexName || !philosName) return;
     const key = `${alexName} × ${philosName}`;
     pairMap[key] = (pairMap[key] || 0) + 1;
