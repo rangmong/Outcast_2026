@@ -871,6 +871,24 @@ async function deleteReceipt(key) {
   } catch(e) { /* 실패 무시 */ }
 }
 
+async function clearReceiptDB() {
+  // 열린 커넥션 닫기
+  if (_idbPromise) {
+    try {
+      const db = await _idbPromise;
+      db.close();
+    } catch(e) { /* ignore */ }
+    _idbPromise = null;
+  }
+  // DB 자체 삭제
+  await new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase('outcast_receipts_db');
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => resolve(); // 다른 탭이 막더라도 계속 진행
+  });
+}
+
 // ===== 이미지 업로드 임시 보관 =====
 const _receiptPending = {}; // { 'f': dataUrlOrNull, 'stamp': dataUrlOrNull }
 
@@ -1622,15 +1640,36 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
       }
     }
     state.schedules[idx] = { ...old, date, time, seatRow, seatNum, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
-    // Remove stamp from old card
+    // Remove stamp from old card (형제 도장 포함)
+    let _siblingsToMove = [];
     if (old.cardId && !old.isNanum) {
+      const _oldCard = state.rewatchCards.find(c => c.id === old.cardId);
+      if (_oldCard) {
+        const _primaryStamp = _oldCard.stamps.find(s => s.scheduleId === editId);
+        if (_primaryStamp) {
+          _siblingsToMove = getStampGroup(_oldCard, _primaryStamp).filter(s => s !== _primaryStamp);
+          _siblingsToMove.forEach(s => {
+            const _si = _oldCard.stamps.indexOf(s);
+            if (_si !== -1) _oldCard.stamps.splice(_si, 1);
+          });
+        }
+      }
       removeStampFromCard(old.cardId, editId);
     }
-    // Add stamp to new card (수정 시 1개만)
+    // Add stamp to new card (형제 도장도 함께 이동)
     if (cardId && !isNanum) {
       const _added = addStampToCard(cardId, editId, date, time);
       if (!_added) {
         showToast('❗ 해당 카드에 같은 날짜·시간 도장이 이미 있어 도장은 연동되지 않았습니다');
+      } else if (_siblingsToMove.length > 0) {
+        const _newCard = state.rewatchCards.find(c => c.id === cardId);
+        if (_newCard) {
+          _siblingsToMove.forEach(s => {
+            s.date = date; s.time = time;
+            if (_newCard.stamps.length < 7) _newCard.stamps.push(s);
+          });
+          sortStampsByDate(_newCard);
+        }
       }
     }
     // 이미지 저장/삭제
@@ -1940,6 +1979,20 @@ function removeStampFromCard(cardId, scheduleId) {
   if (idx !== -1) card.stamps.splice(idx, 1);
 }
 
+// 같은 날짜+시간의 도장 그룹 전체 반환 (더블/트리플 묶음)
+function getStampGroup(card, stamp) {
+  if (!stamp || !stamp.date || !stamp.time) return stamp ? [stamp] : [];
+  return card.stamps.filter(s => s.date === stamp.date && s.time === stamp.time);
+}
+
+// 해당 도장이 그룹에서 2번째 이후(비주요)인지 확인
+function isSecondaryStamp(card, stamp) {
+  if (!stamp || !stamp.date || !stamp.time) return false;
+  const group = card.stamps.filter(s => s.date === stamp.date && s.time === stamp.time);
+  if (group.length <= 1) return false;
+  return card.stamps.indexOf(stamp) !== card.stamps.indexOf(group[0]);
+}
+
 function checkMilestone(card, stampNum, stampDate) {
   const logDate = stampDate || new Date().toISOString().slice(0,10);
   if (stampNum === 3) {
@@ -2010,7 +2063,10 @@ function buildRewatchCard(card) {
       const _dateLabel = stampDateLabel(stamp.date);
       const _marker = getStampTimeMarker(stamp);
       const _markerHtml = _marker ? `<sup style="font-size:65%;line-height:1">${_marker}</sup>` : '';
-      const _dateLine = _dateLabel ? `<span style="font-size:9px;font-weight:800;line-height:1;pointer-events:none">${_dateLabel}${_markerHtml}</span>` : '';
+      const _isSecondary = isSecondaryStamp(card, stamp);
+      const _dateLine = _isSecondary
+        ? `<span style="font-size:9px;font-weight:800;line-height:1;pointer-events:none">−</span>`
+        : (_dateLabel ? `<span style="font-size:9px;font-weight:800;line-height:1;pointer-events:none">${_dateLabel}${_markerHtml}</span>` : '');
       slotsHtml += `<div class="stamp-slot filled" ${msAttr} draggable="true"
         title="${sInfo ? sInfo.date + ' ' + (sInfo.time||'') : stamp.date}"
         ondragstart="onStampDragStart(event,'${card.id}',${i-1})"
@@ -2350,20 +2406,37 @@ async function saveStampEdit() {
   const targetCard = state.rewatchCards.find(c => c.id === newCardId);
   if (newCardId !== cardId) {
     if (!targetCard) { showToast('❗ 대상 카드를 찾을 수 없습니다'); return; }
-    const extra = qty - 1;
-    if (targetCard.stamps.length + 1 + extra > 7) {
+    // 그룹(같은 날짜+시간) 전체 이동
+    const group = getStampGroup(srcCard, stamp);
+    const siblings = group.filter(s => s !== stamp);
+    const extra = qty - 1; // 새로 추가할 도장 수
+    if (targetCard.stamps.length + group.length + extra > 7) {
       showToast(`❗ 대상 카드의 남은 자리가 부족합니다`); return;
     }
+    // 원본 카드에서 제거 (인덱스가 바뀌지 않도록 뒤에서부터)
     srcCard.stamps.splice(stampIdx, 1);
+    siblings.forEach(s => {
+      const si = srcCard.stamps.indexOf(s);
+      if (si !== -1) srcCard.stamps.splice(si, 1);
+    });
+    // 대상 카드에 추가
     targetCard.stamps.push(stamp);
+    siblings.forEach(s => targetCard.stamps.push(s));
     sortStampsByDate(srcCard);
     if (stamp.scheduleId) {
       const sched = state.schedules.find(s => s.id === stamp.scheduleId);
       if (sched) sched.cardId = newCardId;
     }
+    siblings.forEach(s => {
+      if (s.scheduleId) {
+        const sched = state.schedules.find(x => x.id === s.scheduleId);
+        if (sched) sched.cardId = newCardId;
+      }
+    });
+    recalculateMilestones(srcCard, false);
   }
 
-  // 추가 적립 (더블/트리플)
+  // 추가 적립 (더블/트리플) - 그룹 이동과 별개로 새 도장 추가
   const finalCard = state.rewatchCards.find(c => c.id === newCardId);
   if (finalCard && qty > 1) {
     const toAdd = qty - 1;
@@ -2374,7 +2447,10 @@ async function saveStampEdit() {
       finalCard.stamps.push({ id: uuid(), scheduleId: null, date: newDate, time: newTime });
     }
   }
-  if (finalCard) sortStampsByDate(finalCard);
+  if (finalCard) {
+    sortStampsByDate(finalCard);
+    recalculateMilestones(finalCard, false);
+  }
 
   // 이미지 저장/삭제 (stamp.id 기준)
   const stampId = stamp.id;
@@ -2443,29 +2519,47 @@ function onCardDrop(e, targetCardId) {
   }
 
   const stamp = srcCard.stamps[stampIdx];
+  if (!stamp) { dragSource = null; return; }
+
+  // 그룹(같은 날짜+시간) 전체 이동
+  const group = getStampGroup(srcCard, stamp);
+
   if (isDuplicateStamp(tgtCard, stamp.date, stamp.time)) {
     showToast('❗ 대상 카드에 같은 날짜·시간 도장이 이미 있습니다');
     dragSource = null;
     return;
   }
 
-  srcCard.stamps.splice(stampIdx, 1);
-  tgtCard.stamps.push(stamp);
+  if (tgtCard.stamps.length + group.length > 7) {
+    showToast('❗ 대상 카드에 자리가 부족합니다');
+    dragSource = null;
+    return;
+  }
+
+  // 원본에서 그룹 전체 제거 (인덱스 역순으로)
+  const groupIndices = group.map(s => srcCard.stamps.indexOf(s)).sort((a, b) => b - a);
+  groupIndices.forEach(gi => { if (gi !== -1) srcCard.stamps.splice(gi, 1); });
+
+  // 대상 카드에 추가
+  group.forEach(s => tgtCard.stamps.push(s));
+
   sortStampsByDate(tgtCard);
   recalculateMilestones(srcCard, false);
   recalculateMilestones(tgtCard, false);
 
   // Update schedule's cardId
-  if (stamp.scheduleId) {
-    const sched = state.schedules.find(s => s.id === stamp.scheduleId);
-    if (sched) sched.cardId = targetCardId;
-  }
+  group.forEach(s => {
+    if (s.scheduleId) {
+      const sched = state.schedules.find(x => x.id === s.scheduleId);
+      if (sched) sched.cardId = targetCardId;
+    }
+  });
 
-  
   recalcCoupons();
   saveState();
   renderAll();
-  showToast('✅ 도장을 이동했습니다');
+  const groupLabel = group.length > 1 ? ` (${group.length}개)` : '';
+  showToast(`✅ 도장${groupLabel}을 이동했습니다`);
   dragSource = null;
 }
 
@@ -2862,7 +2956,7 @@ function resetAllData() {
     confirmText: '초기화',
     confirmClass: 'btn-danger',
     cancelText: '취소',
-    onConfirm: () => {
+    onConfirm: async () => {
       const theme = state.settings.theme;
       const titleEmoji = state.settings.titleEmoji;
       state = {
@@ -2873,6 +2967,7 @@ function resetAllData() {
         showSchedule: [],
         settings: { theme, titleEmoji }
       };
+      await clearReceiptDB();
       saveState();
       renderAll();
       renderScheduleUpdateDate();
