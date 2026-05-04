@@ -2092,8 +2092,15 @@ function buildRewatchCard(card) {
 
   const ms3done = stampCount >= 3, ms5done = stampCount >= 5, ms7done = stampCount >= 7;
 
-  // 수동 도장 중 내역서 있는 것 목록 (형제 도장 제외)
-  const manualReceiptStamps = card.stamps.filter(s => !isSecondaryStamp(card, s));
+  // 내역서 있는 것 목록 (형제 도장 제외, 내역서 있는 도장만)
+  const manualReceiptStamps = card.stamps.filter(s => {
+    if (isSecondaryStamp(card, s)) return false;
+    if (s.scheduleId) {
+      const sched = state.schedules.find(sc => sc.id === s.scheduleId);
+      return !!(sched && sched.hasReceipt);
+    }
+    return !!s.hasReceipt;
+  });
   const manualReceiptHtml = manualReceiptStamps.length > 0
     ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         ${manualReceiptStamps.map(s => `
