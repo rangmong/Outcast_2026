@@ -2431,7 +2431,10 @@ function deleteRewatchCard(cardId) {
           if (sched && sched.cardId === cardId) sched.cardId = '';
         });
       }
+      // 이 카드에서 획득된 마일스톤 쿠폰 로그 제거
+      state.couponLogs = state.couponLogs.filter(l => l.cardId !== cardId);
       state.rewatchCards = state.rewatchCards.filter(c => c.id !== cardId);
+      recalcCoupons();
       saveState();
       renderAll();
     }
