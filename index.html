@@ -1658,19 +1658,26 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
       }
       removeStampFromCard(old.cardId, editId);
     }
-    // Add stamp to new card (형제 도장도 함께 이동)
+    // Add stamp to new card (형제 도장도 함께 이동 + stampQty 반영)
     if (cardId && !isNanum) {
       const _added = addStampToCard(cardId, editId, date, time);
       if (!_added) {
         showToast('❗ 해당 카드에 같은 날짜·시간 도장이 이미 있어 도장은 연동되지 않았습니다');
-      } else if (_siblingsToMove.length > 0) {
+      } else {
         const _newCard = state.rewatchCards.find(c => c.id === cardId);
         if (_newCard) {
+          // 기존 형제 도장 이동 (날짜/시간 업데이트)
           _siblingsToMove.forEach(s => {
             s.date = date; s.time = time;
             if (_newCard.stamps.length < 7) _newCard.stamps.push(s);
           });
+          // stampQty가 기존보다 클 경우 추가 도장 신규 적립
+          const _alreadyAdded = 1 + _siblingsToMove.length;
+          for (let _qi = _alreadyAdded; _qi < stampQty && _newCard.stamps.length < 7; _qi++) {
+            _newCard.stamps.push({ id: uuid(), scheduleId: null, date, time });
+          }
           sortStampsByDate(_newCard);
+          recalculateMilestones(_newCard);
         }
       }
     }
@@ -1704,7 +1711,7 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
         showToast('❗ 해당 카드에 같은 날짜·시간 도장이 이미 있어 도장은 연동되지 않았습니다');
       } else {
         for (let _qi = 1; _qi < stampQty; _qi++) {
-          addStampToCard(cardId, null, date, time);
+          addStampToCard(cardId, null, date, time, true); // allowSibling=true: 같은 날짜·시간 허용
         }
       }
     }
@@ -1929,10 +1936,10 @@ function isDuplicateStamp(card, date, time, excludeId = null) {
   return card.stamps.some(s => s.date === date && s.time === time && s.id !== excludeId);
 }
 
-function addStampToCard(cardId, scheduleId, date, time = '') {
+function addStampToCard(cardId, scheduleId, date, time = '', allowSibling = false) {
   const card = state.rewatchCards.find(c => c.id === cardId);
   if (!card || card.stamps.length >= 7) return false;
-  if (isDuplicateStamp(card, date, time)) return false;
+  if (!allowSibling && isDuplicateStamp(card, date, time)) return false;
   card.stamps.push({ id: uuid(), scheduleId, date, time });
   sortStampsByDate(card);
   recalculateMilestones(card);
@@ -2074,7 +2081,7 @@ function buildRewatchCard(card) {
         ondragstart="onStampDragStart(event,'${card.id}',${i-1})"
         ontouchstart="onStampTouchStart(event,'${card.id}',${i-1})"
         data-card-id="${card.id}" data-stamp-idx="${i-1}"
-        ${sInfo ? `onclick="openScheduleAddModal('${sInfo.id}')"` : `onclick="openStampEditModal('${card.id}',${i-1})"`}
+        ${sInfo ? `onclick="openDetail('${sInfo.id}')"` : `onclick="openStampEditModal('${card.id}',${i-1})"`}
         >${_dateLine}<span class="stamp-num">${i}</span></div>`;
     } else {
       const onclickAttr = `onclick="stampSlotClick('${card.id}', ${i-1})"`;
@@ -2085,12 +2092,12 @@ function buildRewatchCard(card) {
 
   const ms3done = stampCount >= 3, ms5done = stampCount >= 5, ms7done = stampCount >= 7;
 
-  // 수동 도장 중 내역서 있는 것 목록
-  const manualReceiptStamps = card.stamps.filter(s => !s.scheduleId && s.hasReceipt);
+  // 수동 도장 중 내역서 있는 것 목록 (형제 도장 제외)
+  const manualReceiptStamps = card.stamps.filter(s => !isSecondaryStamp(card, s));
   const manualReceiptHtml = manualReceiptStamps.length > 0
     ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         ${manualReceiptStamps.map(s => `
-          <button class="btn-receipt-view" onclick="openReceiptViewer('stamp_${s.id}')">🧾 ${stampDateLabel(s.date)} 내역서보기</button>
+          <button class="btn-receipt-view" onclick="openReceiptViewer('${s.scheduleId?`sched_${s.scheduleId}`:`stamp_${s.id}`}')">🧾 ${stampDateLabel(s.date)} 내역서보기</button>
         `).join('')}
        </div>`
     : '';
@@ -2610,6 +2617,16 @@ function deleteStampEdit() {
       const card = state.rewatchCards.find(c => c.id === cardId);
       if (!card) return;
       const stamp = card.stamps[stampIdx];
+      // 삭제 대상에 scheduleId가 있으면 형제 도장으로 이전, 없으면 일정에서 카드 연결 해제
+      if (stamp && stamp.scheduleId) {
+        const siblings = getStampGroup(card, stamp).filter(s => s !== stamp);
+        if (siblings.length > 0) {
+          siblings[0].scheduleId = stamp.scheduleId;
+        } else {
+          const sched = state.schedules.find(s => s.id === stamp.scheduleId);
+          if (sched) sched.cardId = '';
+        }
+      }
       if (stamp && stamp.id && stamp.hasReceipt) deleteReceipt(`stamp_${stamp.id}`);
       card.stamps.splice(stampIdx, 1);
       recalculateMilestones(card, false);
