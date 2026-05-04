@@ -1693,6 +1693,27 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
       delete _receiptPending['f'];
     }
   } else {
+    // 중복 날짜·시간 검사 (신규 등록 시)
+    const _dupSched = state.schedules.find(x => x.date === date && x.time === time);
+    if (_dupSched) {
+      showConfirm({
+        icon: '📅',
+        title: '기존 일정이 있습니다',
+        msg: `${date} ${time}에 이미 등록된 일정이 있습니다.\n수정하시겠습니까?`,
+        confirmText: '수정',
+        cancelText: '닫기',
+        confirmClass: 'btn-primary',
+        onConfirm: () => {
+          document.getElementById('edit-id').value = _dupSched.id;
+          saveSchedule();
+        },
+        onCancel: () => {
+          closeModal('modal-add');
+        }
+      });
+      return;
+    }
+
     const id = uuid();
     // Coupon usage
     if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
