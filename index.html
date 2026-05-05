@@ -3326,6 +3326,13 @@ if ('serviceWorker' in navigator) {
       _hadController = true;
     });
 
+    // SW에서 직접 보낸 업데이트 알림 (포커스된 창 대상)
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'SW_UPDATED') {
+        _swUpdatePending = true;
+      }
+    });
+
     // 앱이 포그라운드로 돌아올 때 업데이트 적용
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && _swUpdatePending) {
