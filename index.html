@@ -2376,16 +2376,16 @@ async function saveStampOnly() {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // qty만큼 도장 추가
+  const firstStampId = uuid();
+
   if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
     recalcCoupons();
     if ((state.coupons[discountUsed] || 0) <= 0) {
       showToast('❗ 해당 할인권이 없습니다'); return;
     }
-    state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 도장 적립 사용`, qty: 1 });
+    state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 도장 적립 사용`, qty: 1, stampId: firstStampId });
   }
-
-  // qty만큼 도장 추가
-  const firstStampId = uuid();
   for (let i = 0; i < qty; i++) {
     const sid = i === 0 ? firstStampId : uuid();
     card.stamps.push({ id: sid, scheduleId: null, date, time, memo });
@@ -2791,6 +2791,20 @@ function deleteStampEdit() {
         } else {
           const sched = state.schedules.find(s => s.id === stamp.scheduleId);
           if (sched) sched.cardId = '';
+        }
+      }
+      // 이 도장에 연결된 쿠폰 사용 로그 처리 (형제 도장이 있으면 이관, 없으면 삭제하여 복구)
+      if (stamp && stamp.id) {
+        const couponLogIdx = state.couponLogs.findIndex(l => l.stampId === stamp.id && l.type === '사용');
+        if (couponLogIdx !== -1) {
+          const siblings = getStampGroup(card, stamp).filter(s => s !== stamp);
+          if (siblings.length > 0) {
+            // 첫 번째 형제 도장으로 쿠폰 로그 이관
+            state.couponLogs[couponLogIdx].stampId = siblings[0].id;
+          } else {
+            // 형제 없음 → 로그 삭제 = 할인권 복구
+            state.couponLogs.splice(couponLogIdx, 1);
+          }
         }
       }
       if (stamp && stamp.id && stamp.hasReceipt) deleteReceipt(`stamp_${stamp.id}`);
