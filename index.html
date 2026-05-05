@@ -3313,6 +3313,26 @@ function resetAllData() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js');
+
+    // 새 서비스워커 감지 → 앱 재진입 시 자동 리로드
+    let _swUpdatePending = false;
+    // 최초 설치(컨트롤러 없음 → 있음)는 무시, 교체(컨트롤러 → 새 컨트롤러)만 감지
+    let _hadController = !!navigator.serviceWorker.controller;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_hadController) {
+        _swUpdatePending = true;
+      }
+      _hadController = true;
+    });
+
+    // 앱이 포그라운드로 돌아올 때 업데이트 적용
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && _swUpdatePending) {
+        _swUpdatePending = false;
+        window.location.reload();
+      }
+    });
   });
 }
 </script>
