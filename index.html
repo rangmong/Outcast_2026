@@ -1790,6 +1790,7 @@ function deleteSchedule(id) {
         if (pIdx !== -1) card.stamps.splice(pIdx, 1);
         recalculateMilestones(card, false);
       }
+      recalcCoupons();
       saveState();
       renderAll();
       closeModal('modal-detail');
@@ -2459,6 +2460,37 @@ let dragSource = null;
 let _touchDrag = null;
 let _touchGhostEl = null;
 
+// ===== DRAG AUTO-SCROLL =====
+let _autoScrollRAF = null;
+let _autoScrollClientY = null;
+
+function _updateAutoScrollY(clientY) {
+  _autoScrollClientY = clientY;
+  if (!_autoScrollRAF) _runAutoScroll();
+}
+function _stopAutoScroll() {
+  _autoScrollClientY = null;
+  if (_autoScrollRAF) { cancelAnimationFrame(_autoScrollRAF); _autoScrollRAF = null; }
+}
+function _runAutoScroll() {
+  _autoScrollRAF = requestAnimationFrame(() => {
+    _autoScrollRAF = null;
+    if (_autoScrollClientY === null) return;
+    const mainEl = document.querySelector('.main');
+    if (!mainEl) return;
+    const ZONE = 80, SPEED = 10;
+    const rect = mainEl.getBoundingClientRect();
+    const relY = _autoScrollClientY - rect.top;
+    const h = rect.height;
+    if (relY < ZONE && relY >= 0) {
+      mainEl.scrollTop -= SPEED * (1 - relY / ZONE);
+    } else if (relY > h - ZONE && relY <= h) {
+      mainEl.scrollTop += SPEED * (1 - (h - relY) / ZONE);
+    }
+    if (_autoScrollClientY !== null) _runAutoScroll();
+  });
+}
+
 function initTouchDragDrop() {
   document.addEventListener('touchmove', (e) => {
     if (!_touchDrag || !_touchDrag.started) return;
@@ -2469,6 +2501,8 @@ function initTouchDragDrop() {
       _touchGhostEl.style.left = (touch.clientX - 20) + 'px';
       _touchGhostEl.style.top  = (touch.clientY - 20) + 'px';
     }
+    // 자동 스크롤
+    _updateAutoScrollY(touch.clientY);
     // 타겟 카드 하이라이트
     document.querySelectorAll('.rw-card').forEach(c => c.classList.remove('drag-over'));
     if (_touchGhostEl) _touchGhostEl.style.display = 'none';
@@ -2482,6 +2516,7 @@ function initTouchDragDrop() {
 
   document.addEventListener('touchend', (e) => {
     if (!_touchDrag) return;
+    _stopAutoScroll();
     // 고스트 제거
     if (_touchGhostEl) { _touchGhostEl.remove(); _touchGhostEl = null; }
     document.querySelectorAll('.rw-card').forEach(c => c.classList.remove('drag-over'));
@@ -2506,11 +2541,21 @@ function initTouchDragDrop() {
   });
 
   document.addEventListener('touchcancel', () => {
+    _stopAutoScroll();
     if (_touchGhostEl) { _touchGhostEl.remove(); _touchGhostEl = null; }
     document.querySelectorAll('.rw-card').forEach(c => c.classList.remove('drag-over'));
     if (_touchDrag && _touchDrag.srcEl) _touchDrag.srcEl.style.opacity = '';
     _touchDrag = null;
     dragSource = null;
+  });
+
+  // Desktop HTML5 drag 자동 스크롤
+  document.addEventListener('dragover', (e) => {
+    if (!dragSource) return;
+    _updateAutoScrollY(e.clientY);
+  });
+  document.addEventListener('dragend', () => {
+    _stopAutoScroll();
   });
 }
 
@@ -2717,6 +2762,7 @@ async function saveStampEdit() {
     delete _receiptPending['se'];
   }
 
+  recalcCoupons();
   saveState();
   renderAll();
   closeModal('modal-stamp-edit');
@@ -2750,6 +2796,7 @@ function deleteStampEdit() {
       if (stamp && stamp.id && stamp.hasReceipt) deleteReceipt(`stamp_${stamp.id}`);
       card.stamps.splice(stampIdx, 1);
       recalculateMilestones(card, false);
+      recalcCoupons();
       saveState();
       renderAll();
       closeModal('modal-stamp-edit');
