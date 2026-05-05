@@ -1,4 +1,4 @@
-const CACHE_NAME = 'outcast-v2.3.0';
+const CACHE_NAME = 'outcast-v1.3.5';
 const ASSETS = [
   './',
   './index.html',
