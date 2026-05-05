@@ -433,7 +433,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
       <div class="setting-row" style="border-bottom:none">
         <div>
           <div class="setting-lbl">앱 새로 고침</div>
-          <div class="setting-desc">PWA 캐시를 삭제하고 최신 파일을 받아옵니다</div>
+          <div class="setting-desc">PWA 캐시를 삭제하고 최신 파일을 받아옵니다<br><span id="app-version-lbl" style="color:var(--primary);font-weight:700"></span></div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="reloadApp()">새로고침</button>
       </div>
@@ -1018,6 +1018,17 @@ document.addEventListener('DOMContentLoaded', () => {
   renderScheduleUpdateDate();
   renderAll();
   switchTab(state.settings.activeTab || 'home');
+  // 앱 버전 표시
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      const key = keys.find(k => /^outcast-v/.test(k));
+      const el = document.getElementById('app-version-lbl');
+      if (el && key) {
+        const ver = key.replace(/^outcast-v/, '');
+        el.textContent = `v${ver}`;
+      }
+    }).catch(() => {});
+  }
   fetchScheduleData();
   initTouchDragDrop();
 });
