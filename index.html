@@ -381,8 +381,9 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
     <button class="btn btn-outline btn-full" style="margin-bottom:12px" onclick="addRewatchCard()">＋ 재관람카드 추가</button>
   </div>
 
-  <!-- TAB 4: 통계 -->
   <div class="tab-page" id="tab-stats">
+    <div class="sec-title">📊 총 관람 횟수</div>
+    <div class="card"><div id="stats-totalShow"></div></div>
     <div class="sec-title">🗺 좌석 히트맵</div>
     <div class="card">
       <div style="font-size:11px;color:var(--text2);margin-bottom:8px">색이 짙을수록 많이 앉은 자리입니다</div>
@@ -789,6 +790,22 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
       <select class="form-select" id="se-card-select"></select>
     </div>
     <div class="form-group">
+      <label class="form-label">사용 할인</label>
+      <select class="form-select" id="se-discount">
+        <option value="none">없음</option>
+        <option value="preview">프리뷰 할인</option>
+        <option value="rewatch">재관람 할인</option>
+        <option value="forty">40% 할인권</option>
+        <option value="fifty">50% 할인권</option>
+        <option value="proofpass">증빙패스</option>
+        <option value="onsite">현매 할인</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">한 줄 메모</label>
+      <textarea class="form-textarea" id="se-memo" placeholder="예: 도장 나눔"></textarea>
+    </div>
+    <div class="form-group">
       <label class="form-label">추가 적립</label>
       <div style="display:flex;gap:8px">
         <button type="button" class="stamp-qty-btn active" id="se-qty-1" onclick="setSEQty(1)"> 1회 (단일)</button>
@@ -806,9 +823,24 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
       <input type="file" id="se-receipt-input" accept="image/*" style="display:none" onchange="onReceiptFileChange('se', this)">
     </div>
     <div class="btn-group" style="gap:6px">
-      <button class="btn btn-danger" style="flex:1" onclick="deleteStampEdit()">🗑 삭제</button>
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-stamp-edit')">취소</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveStampEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stamp Detail Modal -->
+<div class="overlay" id="modal-manual-stamp-detail">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">도장 상세</div>
+    <input type="hidden" id="sd-card-id">
+    <input type="hidden" id="sd-stamp-idx">
+    <div id="sd-info"></div>
+    <div class="detail-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-manual-stamp-detail')">닫기</button>
+      <button class="btn btn-primary" style="flex:1" onclick="editManualStampFromDetail()">수정</button>
+      <button class="btn btn-danger" style="flex:1" onclick="deleteManualStampFromDetail()">삭제</button>
     </div>
   </div>
 </div>
@@ -2200,7 +2232,7 @@ function buildRewatchCard(card) {
         ondragstart="onStampDragStart(event,'${card.id}',${i-1})"
         ontouchstart="onStampTouchStart(event,'${card.id}',${i-1})"
         data-card-id="${card.id}" data-stamp-idx="${i-1}"
-        ${sInfo ? `onclick="openDetail('${sInfo.id}')"` : `onclick="openStampEditModal('${card.id}',${i-1})"`}
+        ${sInfo ? `onclick="openDetail('${sInfo.id}')"` : `onclick="openManualStampDetail('${card.id}',${i-1})"`}
         >${_dateLine}<span class="stamp-num">${i}</span></div>`;
     } else {
       const onclickAttr = `onclick="stampSlotClick('${card.id}', ${i-1})"`;
@@ -2396,7 +2428,7 @@ async function saveStampOnly() {
   }
   for (let i = 0; i < qty; i++) {
     const sid = i === 0 ? firstStampId : uuid();
-    card.stamps.push({ id: sid, scheduleId: null, date, time, memo });
+    card.stamps.push({ id: sid, scheduleId: null, date, time, memo, discountUsed });
   }
   sortStampsByDate(card);
   recalculateMilestones(card);
@@ -2620,6 +2652,63 @@ function onStampTouchStart(e, cardId, stampIdx) {
   srcEl.addEventListener('touchend', onEarlyEnd, { once: true });
 }
 
+// ===== MANUAL STAMP DETAIL POPUP =====
+function openManualStampDetail(cardId, stampIdx) {
+  const card = state.rewatchCards.find(c => c.id === cardId);
+  if (!card) return;
+  const stamp = card.stamps[stampIdx];
+  if (!stamp) return;
+
+  document.getElementById('sd-card-id').value = cardId;
+  document.getElementById('sd-stamp-idx').value = stampIdx;
+
+  const discLabel = stamp.discountUsed && stamp.discountUsed !== 'none' ? kindLabel(stamp.discountUsed) : '없음';
+  const dateStr = stamp.date || '-';
+  const timeStr = stamp.time || '-';
+  const memoStr = stamp.memo || '-';
+
+  const cardName = card.name || '';
+  const stampNum = stampIdx + 1;
+
+  let rows = `
+    <div class="detail-row"><span class="detail-key">도장 정보</span><span class="detail-val">${cardName} ${stampNum}회차 도장</span></div>
+    <div class="detail-row"><span class="detail-key">날짜/시간</span><span class="detail-val">${dateStr} ${timeStr !== '-' ? timeStr : ''}</span></div>
+    <div class="detail-row"><span class="detail-key">사용 할인</span><span class="detail-val">${discLabel}</span></div>
+    ${memoStr !== '-' ? `<div class="detail-row"><span class="detail-key">메모</span><span class="detail-val" style="color:var(--accent)">${memoStr}</span></div>` : ''}
+  `;
+
+  if (stamp.hasReceipt) {
+    rows += `<div class="detail-row"><span class="detail-key">내역서</span><span class="detail-val"><button class="btn btn-secondary btn-sm" onclick="viewStampReceipt('${stamp.id}')">🧾 보기</button></span></div>`;
+  }
+
+  document.getElementById('sd-info').innerHTML = rows;
+  openModal('modal-manual-stamp-detail');
+}
+
+function editManualStampFromDetail() {
+  const cardId = document.getElementById('sd-card-id').value;
+  const stampIdx = parseInt(document.getElementById('sd-stamp-idx').value);
+  closeModal('modal-manual-stamp-detail');
+  openStampEditModal(cardId, stampIdx);
+}
+
+function deleteManualStampFromDetail() {
+  // se- 필드에 값 설정 후 기존 deleteStampEdit 재사용
+  document.getElementById('se-card-id').value = document.getElementById('sd-card-id').value;
+  document.getElementById('se-stamp-idx').value = document.getElementById('sd-stamp-idx').value;
+  closeModal('modal-manual-stamp-detail');
+  deleteStampEdit();
+}
+
+function viewStampReceipt(stampId) {
+  getReceipt(`stamp_${stampId}`).then(dataUrl => {
+    if (!dataUrl) { showToast('내역서를 찾을 수 없습니다'); return; }
+    const img = document.getElementById('receipt-view-img');
+    if (img) img.src = dataUrl;
+    openModal('modal-receipt');
+  }).catch(() => showToast('내역서를 불러올 수 없습니다'));
+}
+
 // ===== STAMP EDIT MODAL =====
 function openStampEditModal(cardId, stampIdx) {
   const card = state.rewatchCards.find(c => c.id === cardId);
@@ -2638,6 +2727,12 @@ function openStampEditModal(cardId, stampIdx) {
   cardSel.innerHTML = state.rewatchCards.map(c =>
     `<option value="${c.id}"${c.id === cardId ? ' selected' : ''}>${c.name}</option>`
   ).join('');
+
+  const discountSel = document.getElementById('se-discount');
+  discountSel.value = stamp.discountUsed || 'none';
+
+  const memoInput = document.getElementById('se-memo');
+  memoInput.value = stamp.memo || '';
 
   setSEQty(1);
 
@@ -2706,6 +2801,9 @@ async function saveStampEdit() {
 
   stamp.date = newDate;
   stamp.time = newTime;
+  stamp.memo = document.getElementById('se-memo').value.trim();
+  const discountUsed = document.getElementById('se-discount').value;
+  stamp.discountUsed = discountUsed === 'none' ? null : discountUsed;
 
   // 카드 이동
   const targetCard = state.rewatchCards.find(c => c.id === newCardId);
@@ -2896,9 +2994,33 @@ function onCardDrop(e, targetCardId) {
 
 // ===== STATS =====
 function renderStats() {
+  renderStatsTotalShow();
   renderStatsCast();
   renderStatsPair();
   renderHeatmap();
+}
+
+function renderStatsTotalShow() {
+  const el = document.getElementById('stats-totalShow');
+  if (!el) return;
+  const totalShow = state.showSchedule.length;
+
+  const totalView = state.schedules.length;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0">
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:16px 12px;text-align:center;border:1.5px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-bottom:8px">공연 회차</div>
+        <div style="font-size:34px;font-weight:900;color:var(--primary);line-height:1">${totalShow}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">회</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:16px 12px;text-align:center;border:1.5px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-bottom:8px">관극 회차</div>
+        <div style="font-size:34px;font-weight:900;color:var(--primary);line-height:1">${totalView}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">회</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderStatsCast() {
