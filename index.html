@@ -1037,6 +1037,34 @@ function loadState() {
         if (!stamp.id) stamp.id = uuid();
       });
     });
+
+    // 쿠폰로그 마이그레이션
+    if (state.couponLogs) {
+      state.couponLogs.forEach(log => {
+        if (!log.time) {
+          // 관람 기록에서 시간 찾기
+          const sched = state.schedules.find(s => s.scheduleId === log.scheduleId);
+          if (sched && sched.time) {
+            log.time = sched.time;
+            if (!/\d{2}:\d{2}/.test(log.memo || '')) {
+              log.memo = (log.memo || '').replace(/(\d{4}-\d{2}-\d{2})/, `$1 ${sched.time}`);
+            }
+          } else {
+            // 수동 도장 내역에서 시간 찾기
+            for (const card of state.rewatchCards) {
+              const stamp = card.stamps.find(s => s.stempId === log.stampId);
+              if (stamp && stamp.time) {
+                log.time = stamp.time;
+                if (!/\d{2}:\d{2}/.test(log.memo || '')) {
+                  log.memo = (log.memo || '').replace(/(\d{4}-\d{2}-\d{2})/, `$1 ${stamp.time}`);
+                }
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
   }
 }
 function uuid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -1196,7 +1224,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 function renderNextSchedule() {
   const el = document.getElementById('home-next-schedule');
   if (!el) return;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const next = state.schedules
     .filter(s => s.date >= today)
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
@@ -1333,7 +1361,7 @@ function openCouponChangeModal(kind, delta) {
   document.getElementById('cc-confirm-btn').className = `btn ${delta > 0 ? 'btn-primary' : 'btn-danger'}`;
   document.getElementById('cc-kind').value = kind;
   document.getElementById('cc-delta').value = delta;
-  document.getElementById('cc-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('cc-date').value = new Date().toLocaleDateString('sv-SE');
   document.getElementById('cc-holiday').checked = false;
   updateTimeSelect('cc-date', 'cc-time', 'cc-holiday');
   document.getElementById('cc-memo').value = '';
@@ -1343,7 +1371,7 @@ function openCouponChangeModal(kind, delta) {
 function confirmCouponChange() {
   const kind = document.getElementById('cc-kind').value;
   const delta = parseInt(document.getElementById('cc-delta').value);
-  const date = document.getElementById('cc-date').value || new Date().toISOString().slice(0, 10);
+  const date = document.getElementById('cc-date').value || new Date().toLocaleDateString('sv-SE');
   const time = document.getElementById('cc-time').value;
   const memo = document.getElementById('cc-memo').value.trim();
   const defaultMemo = delta > 0 ? '수동 추가' : '수동 차감';
@@ -1370,16 +1398,16 @@ function changeCoupon(kind, delta) {
 }
 
 function openCouponPackModal() {
-  document.getElementById('pack-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('pack-date').value = new Date().toLocaleDateString('sv-SE');
   document.getElementById('pack-memo').value = '';
   openModal('modal-coupon-pack');
 }
 function addCouponPack() {
-  const date = document.getElementById('pack-date').value || new Date().toISOString().slice(0,10);
+  const date = document.getElementById('pack-date').value || new Date().toLocaleDateString('sv-SE');
   const memo = document.getElementById('pack-memo').value.trim() || '쿠폰팩 추가';
   const kinds = ['forty', 'fifty', 'proofpass'];
   kinds.forEach(kind => {
-    state.couponLogs.unshift({ id: uuid(), date, type: '획득', kind, memo, qty: 1, manual: true });
+    state.couponLogs.unshift({ id: uuid(), date, time, type: '획득', kind, memo, qty: 1, manual: true });
   });
   recalcCoupons();
   saveState();
@@ -1487,7 +1515,7 @@ function openScheduleAddModal(editId = null, preCardId = null) {
     document.getElementById('f-nanum').checked = !!s.isNanum;
     document.getElementById('f-memo').value = s.memo || '';
   } else {
-    document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('f-date').value = new Date().toLocaleDateString('sv-SE');
     document.getElementById('f-holiday').checked = false;
     updateTimeSelect('f-date', 'f-time', 'f-holiday');
     document.getElementById('f-seat-row').value = '';
@@ -1622,7 +1650,8 @@ function onStampDateChange() {
   updateTimeSelect('stamp-date', 'stamp-time', 'stamp-holiday');
 }
 
-async function saveSchedule() {  const date = document.getElementById('f-date').value;
+async function saveSchedule() {
+  const date = document.getElementById('f-date').value;
   const time = document.getElementById('f-time').value;
   const seatRow = document.getElementById('f-seat-row').value.toUpperCase().trim();
   const seatNum = parseInt(document.getElementById('f-seat-num').value) || 0;
@@ -1663,7 +1692,7 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
     }
   }
 
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toLocaleDateString('sv-SE');
 
   if (editId) {
     const idx = state.schedules.findIndex(x => x.id === editId);
@@ -1679,7 +1708,7 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
         state.couponLogs[existingLogIdx].date = date;
         state.couponLogs[existingLogIdx].memo = `${date} 관람 사용`;
       } else {
-        state.couponLogs.unshift({ id: uuid(), date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
+        state.couponLogs.unshift({ id: uuid(), date, time, type: '사용', kind: discountUsed, memo: `${date} ${time} 관람 사용`, qty: 1, scheduleId: editId });
       }
     } else {
       // 할인권 변경 / 제거 / 신규 적용
@@ -1689,7 +1718,7 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
       if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
         recalcCoupons();
         if ((state.coupons[discountUsed] || 0) <= 0) { showToast('❗ 해당 할인권이 없습니다'); return; }
-        state.couponLogs.unshift({ id: uuid(), date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: editId });
+        state.couponLogs.unshift({ id: uuid(), date, time, type: '사용', kind: discountUsed, memo: `${date} ${time} 관람 사용`, qty: 1, scheduleId: editId });
       }
     }
     state.schedules[idx] = { ...old, date, time, seatRow, seatNum, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
@@ -1772,7 +1801,7 @@ async function saveSchedule() {  const date = document.getElementById('f-date').
       if ((state.coupons[discountUsed] || 0) <= 0) {
         showToast('❗ 해당 할인권이 없습니다'); return;
       }
-      state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 관람 사용`, qty: 1, scheduleId: id });
+      state.couponLogs.unshift({ id: uuid(), date: date, time: time, type: '사용', kind: discountUsed, memo: `${date} ${time} 관람 사용`, qty: 1, scheduleId: id });
     }
     const sched = { id, date, time, seatRow, seatNum, alex: alexCast, philos: philosCast, event, discountUsed, cardId, isNanum, isHoliday, memo };
     state.schedules.push(sched);
@@ -1912,7 +1941,7 @@ function deleteSchedule(id) {
 }
 
 function getScheduleTag(date) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toLocaleDateString('sv-SE');
   if (date > today) return '<span class="tag tag-upcoming">예정</span>';
   if (date === today) return '<span class="tag tag-today">오늘</span>';
   return '<span class="tag tag-past">관람완료</span>';
@@ -1964,14 +1993,14 @@ function renderScheduleItem(s, onclick) {
 function renderHomeConfirmed() {
   const el = document.getElementById('home-confirmed');
   if (!el) return;
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const confirmed = state.schedules.filter(s => s.date >= today).sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
   if (!confirmed.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🎫</div><p>예매 확정된 내역이 없습니다</p></div>'; return; }
   el.innerHTML = confirmed.map(s => renderScheduleItem(s, `openDetail('${s.id}')`)).join('');
 }
 
 function renderScheduleTabs() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const upcoming = state.schedules.filter(s => s.date >= today).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const past = state.schedules.filter(s => s.date < today).sort((a,b)=>b.date.localeCompare(a.date));
 
@@ -2154,7 +2183,7 @@ function isSecondaryStamp(card, stamp) {
 }
 
 function checkMilestone(card, stampNum, stampDate) {
-  const logDate = stampDate || new Date().toISOString().slice(0,10);
+  const logDate = stampDate || new Date().toLocaleDateString('sv-SE');
   if (stampNum === 3) {
     state.coupons.forty = (state.coupons.forty || 0) + 2;
     state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2, cardId: card.id, stampNum: stampNum });
@@ -2186,7 +2215,7 @@ function recalculateMilestones(card, showToasts = true) {
   [3, 5, 7].forEach(num => {
     if (card.stamps.length >= num) {
       const stamp = card.stamps[num - 1];
-      const logDate = (stamp && stamp.date) || new Date().toISOString().slice(0, 10);
+      const logDate = (stamp && stamp.date) || new Date().toLocaleDateString('sv-SE');
       if (num === 3) {
         state.couponLogs.unshift({ id: uuid(), date: logDate, type: '획득', kind: 'forty', memo: `${card.name} 3회차 달성 - 40% 할인권 획득`, qty: 2, cardId: card.id, stampNum: 3 });
         if (showToasts && !prevMilestones.has(3)) showToast('🎉 3회차 달성! 40% 할인권 2장 획득!');
@@ -2352,7 +2381,7 @@ function stampSlotClick(cardId, slotIdx) {
 
 function openStampOnlyModal(cardId) {
   document.getElementById('stamp-card-id').value = cardId;
-  document.getElementById('stamp-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('stamp-date').value = new Date().toLocaleDateString('sv-SE');
   document.getElementById('stamp-holiday').checked = false;
   updateTimeSelect('stamp-date', 'stamp-time', 'stamp-holiday');
   document.getElementById('stamp-discount').value = 'none';
@@ -2414,7 +2443,7 @@ async function saveStampOnly() {
     return;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
 
   // qty만큼 도장 추가
   const firstStampId = uuid();
@@ -2424,7 +2453,7 @@ async function saveStampOnly() {
     if ((state.coupons[discountUsed] || 0) <= 0) {
       showToast('❗ 해당 할인권이 없습니다'); return;
     }
-    state.couponLogs.unshift({ id: uuid(), date: date, type: '사용', kind: discountUsed, memo: `${date} 도장 적립 사용`, qty: 1, stampId: firstStampId });
+    state.couponLogs.unshift({ id: uuid(), date: date, time, type: '사용', kind: discountUsed, memo: `${date} ${time} 도장 적립 사용`, qty: 1, stampId: firstStampId });
   }
   for (let i = 0; i < qty; i++) {
     const sid = i === 0 ? firstStampId : uuid();
@@ -2802,7 +2831,32 @@ async function saveStampEdit() {
   stamp.date = newDate;
   stamp.time = newTime;
   stamp.memo = document.getElementById('se-memo').value.trim();
+
+
+
+  // Coupon reversal / refresh (할인권 변경, 추가/제거 모두 대응)
   const discountUsed = document.getElementById('se-discount').value;
+  const oldDiscount = stamp.discountUsed;
+  const existingLogIdx = state.couponLogs.findIndex(l => l.stampId === stamp.id && l.type === '사용');
+  if (oldDiscount === discountUsed && ['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
+    // 동일 할인권 → 날짜/메모만 업데이트 (수량 변화 없음)
+    if (existingLogIdx !== -1) {
+      state.couponLogs[existingLogIdx].date = newDate;
+      state.couponLogs[existingLogIdx].memo = `${newDate} 관람 사용`;
+    } else {
+      state.couponLogs.unshift({ id: uuid(), date: newDate, time: newTime, type: '사용', kind: discountUsed, memo: `${newDate} ${newTime} 도장 적립 사용`, qty: 1, stampId: stamp.id });
+    }
+  } else {
+    // 할인권 변경 / 제거 / 신규 적용
+    if (['forty', 'fifty', 'proofpass'].includes(oldDiscount)) {
+      if (existingLogIdx !== -1) state.couponLogs.splice(existingLogIdx, 1);
+    }
+    if (['forty', 'fifty', 'proofpass'].includes(discountUsed)) {
+      recalcCoupons();
+      if ((state.coupons[discountUsed] || 0) <= 0) { showToast('❗ 해당 할인권이 없습니다'); return; }
+      state.couponLogs.unshift({ id: uuid(), date: newDate, time: newTime, type: '사용', kind: discountUsed, memo: `${newDate} ${newTime} 도장 적립 사용`, qty: 1, stampId: stamp.id });
+    }
+  }
   stamp.discountUsed = discountUsed === 'none' ? null : discountUsed;
 
   // 카드 이동
@@ -3333,7 +3387,7 @@ async function fetchScheduleData() {
         updatedCount++;
       }
     });
-    state.settings.lastScheduleUpdate = new Date().toISOString().slice(0,10);
+    state.settings.lastScheduleUpdate = new Date().toLocaleDateString('sv-SE');
     saveState();
     if (updatedCount > 0) renderAll();
     renderScheduleUpdateDate();
@@ -3373,7 +3427,7 @@ function backupData() {
   const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `outcast_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `outcast_backup_${new Date().toLocaleDateString('sv-SE')}.json`;
   a.click();
   showToast('💾 백업 파일이 다운로드됩니다');
 }
