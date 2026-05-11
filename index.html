@@ -801,6 +801,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
         <option value="onsite">현매 할인</option>
+        <option value="timesale">타임세일 할인</option>
       </select>
     </div>
     <div class="form-group">
@@ -1590,7 +1591,11 @@ function updateShowSchedInfo() {
   const eventEl = document.getElementById('f-event');
 
   const clearReadonly = () => {
-    [alexEl, philosEl, eventEl].forEach(el => { if (el) el.removeAttribute('readonly'); });
+    [alexEl, philosEl, eventEl].forEach(el => { if (el) {
+          el.value = '';
+          el.removeAttribute('readonly');
+        }
+    });
   };
 
   if (!date || !infoBox || !infoContent) { clearReadonly(); return; }
@@ -1636,9 +1641,6 @@ function updateShowSchedInfo() {
       if (eventEl) eventEl.removeAttribute('readonly');
     }
   } else {
-    alexEl.value = '';
-    philosEl.value = '';
-    eventEl.value = '';
     clearReadonly();
   }
 }
