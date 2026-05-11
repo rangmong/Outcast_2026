@@ -577,6 +577,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
         <option value="onsite">현매 할인</option>
+        <option value="timesale">타임세일 할인</option>
       </select>
     </div>
 
@@ -730,6 +731,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
         <option value="fifty">50% 할인권</option>
         <option value="proofpass">증빙패스</option>
         <option value="onsite">현매 할인</option>
+        <option value="timesale">타임세일 할인</option>
       </select>
     </div>
     <div class="form-group">
@@ -1225,8 +1227,9 @@ function renderNextSchedule() {
   const el = document.getElementById('home-next-schedule');
   if (!el) return;
   const today = new Date().toLocaleDateString('sv-SE');
+  const todayTime = new Date().toLocaleString('sv-SE', { hour12: false, hour: '2-digit', minute: '2-digit' });
   const next = state.schedules
-    .filter(s => s.date >= today)
+    .filter(s => (s.date >= today && s.time >= todayTime))
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
 
   if (!next) {
@@ -1424,6 +1427,7 @@ function kindLabel(k) {
   if (k === 'preview') return '프리뷰 할인';
   if (k === 'rewatch') return '재관람 할인';
   if (k === 'onsite') return '현장예매 할인';
+  if (k === 'timesale') return '타임세일 할인';
   return k;
 }
 
@@ -1581,9 +1585,9 @@ function updateShowSchedInfo() {
   const time = document.getElementById('f-time') ? document.getElementById('f-time').value : '';
   const infoBox = document.getElementById('f-show-sched-info');
   const infoContent = document.getElementById('f-show-sched-info-content');
-  const alexEl = document.getElementById('f-cast-alex');
-  const philosEl = document.getElementById('f-cast-philos');
-  const eventEl = document.getElementById('f-event');
+  const alexEl = document.getElementById('f-cast-alex') ? document.getElementById('f-cast-alex').value : '';
+  const philosEl = document.getElementById('f-cast-philos') ? document.getElementById('f-cast-philos').value : '';
+  const eventEl = document.getElementById('f-event') ? document.getElementById('f-event').value : '';
 
   const clearReadonly = () => {
     [alexEl, philosEl, eventEl].forEach(el => { if (el) el.removeAttribute('readonly'); });
