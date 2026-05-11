@@ -1585,9 +1585,9 @@ function updateShowSchedInfo() {
   const time = document.getElementById('f-time') ? document.getElementById('f-time').value : '';
   const infoBox = document.getElementById('f-show-sched-info');
   const infoContent = document.getElementById('f-show-sched-info-content');
-  const alexEl = document.getElementById('f-cast-alex') ? document.getElementById('f-cast-alex').value : '';
-  const philosEl = document.getElementById('f-cast-philos') ? document.getElementById('f-cast-philos').value : '';
-  const eventEl = document.getElementById('f-event') ? document.getElementById('f-event').value : '';
+  const alexEl = document.getElementById('f-cast-alex');
+  const philosEl = document.getElementById('f-cast-philos');
+  const eventEl = document.getElementById('f-event');
 
   const clearReadonly = () => {
     [alexEl, philosEl, eventEl].forEach(el => { if (el) el.removeAttribute('readonly'); });
@@ -1636,6 +1636,9 @@ function updateShowSchedInfo() {
       if (eventEl) eventEl.removeAttribute('readonly');
     }
   } else {
+    alexEl.value = '';
+    philosEl.value = '';
+    eventEl.value = '';
     clearReadonly();
   }
 }
