@@ -684,7 +684,7 @@ input:checked+.toggle-slider::before{transform:translateX(24px)}
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">📦 쿠폰팩 추가</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">40% 할인권 · 50% 할인권 · 증빙패스를<br>한 번에 각 1장씩 추가합니다.</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">40% 할인권 · 증빙패스를<br>한 번에 각 1장씩 추가합니다.</div>
     <div class="form-group">
       <label class="form-label">획득 날짜</label>
       <input class="form-input" id="pack-date" type="date">
@@ -1231,7 +1231,7 @@ function renderNextSchedule() {
   const today = new Date().toLocaleDateString('sv-SE');
   const todayTime = new Date().toLocaleString('sv-SE', { hour12: false, hour: '2-digit', minute: '2-digit' });
   const next = state.schedules
-    .filter(s => (s.date >= today && s.time >= todayTime))
+    .filter(s => s.date > today || (s.date === today && s.time >= todayTime))
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
 
   if (!next) {
@@ -1410,7 +1410,7 @@ function openCouponPackModal() {
 function addCouponPack() {
   const date = document.getElementById('pack-date').value || new Date().toLocaleDateString('sv-SE');
   const memo = document.getElementById('pack-memo').value.trim() || '쿠폰팩 추가';
-  const kinds = ['forty', 'fifty', 'proofpass'];
+  const kinds = ['forty', 'proofpass'];
   kinds.forEach(kind => {
     state.couponLogs.unshift({ id: uuid(), date, time, type: '획득', kind, memo, qty: 1, manual: true });
   });
@@ -1418,7 +1418,7 @@ function addCouponPack() {
   saveState();
   renderAll();
   closeModal('modal-coupon-pack');
-  showToast('✅ 쿠폰팩 추가됨 (40% · 50% · 증빙패스 각 1장)');
+  showToast('✅ 쿠폰팩 추가됨 (40% · 증빙패스 각 1장)');
 }
 
 function kindLabel(k) {
