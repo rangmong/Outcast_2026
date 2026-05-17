@@ -1409,6 +1409,7 @@ function openCouponPackModal() {
 }
 function addCouponPack() {
   const date = document.getElementById('pack-date').value || new Date().toLocaleDateString('sv-SE');
+  const time = new Date().toLocaleTimeString('sv-SE', { hour12: false, hour: '2-digit', minute: '2-digit' });
   const memo = document.getElementById('pack-memo').value.trim() || '쿠폰팩 추가';
   const kinds = ['forty', 'proofpass'];
   kinds.forEach(kind => {
